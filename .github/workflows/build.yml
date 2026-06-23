@@ -1,6 +1,6 @@
 name: 构建部署流水线
 
-# 跨平台 CI/CD：Web 部署到 GitHub Pages + Android APK + iOS 构建验证
+# 跨平台 CI/CD：Web 部署 + Android（Debug/Release）+ iOS（模拟器/TestFlight）
 # 触发：推送到 main、打 tag（v*）、手动
 on:
   push:
@@ -8,13 +8,11 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
-# Pages 部署需要的权限
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# 同一时间只跑一条部署，避免冲突
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -31,123 +29,171 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-
-      - name: 安装依赖
-        run: pnpm install --frozen-lockfile
-
-      - name: 类型检查
-        run: pnpm run check
-
-      - name: 构建
-        run: pnpm run build
-
-      - name: 配置 Pages
-        uses: actions/configure-pages@v5
-
-      - name: 上传产物
-        uses: actions/upload-pages-artifact@v3
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+      - run: pnpm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
-
-      - name: 部署到 GitHub Pages
-        id: deploy
+      - id: deploy
         uses: actions/deploy-pages@v4
 
   # ----------------------------------------------------------------
-  # Job 2: Android Debug APK 打包
+  # Job 2: Android Debug APK（每次推送）
   # ----------------------------------------------------------------
-  android-build:
-    name: Android APK 打包
+  android-debug:
+    name: Android Debug APK
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-
-      - name: 安装依赖
-        run: pnpm install --frozen-lockfile
-
-      - name: 构建 Web 资源
-        run: pnpm run build
-
-      - name: 配置 Java 17
-        uses: actions/setup-java@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-
-      - name: 配置 Android SDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
         with:
           packages: |
             platforms;android-34
             build-tools;34.0.0
-
-      - name: 添加 Android 平台
-        run: npx cap add android
-
-      - name: 同步 Web 资源到原生工程
-        run: npx cap sync android
-
-      - name: 构建 Debug APK
-        working-directory: android
+      - run: npx cap add android
+      - run: npx cap sync android
+      - working-directory: android
         run: ./gradlew assembleDebug --no-daemon
-
-      - name: 上传 APK 产物
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: tuilemei-android-apk
+          name: tuilemei-android-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
   # ----------------------------------------------------------------
-  # Job 3: iOS 构建验证（模拟器，无需开发者账号签名）
+  # Job 3: Android Release AAB（仅打 tag 时，需签名 secrets）
+  # ----------------------------------------------------------------
+  android-release:
+    name: Android Release AAB（签名）
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platforms;android-34
+            build-tools;34.0.0
+      - run: npx cap add android
+      - run: npx cap sync android
+
+      - name: 写入签名 keystore
+        working-directory: android
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > app/tuilemei.jks
+          cat > app/keystore.properties <<EOF
+          storeFile=tuilemei.jks
+          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: 配置 gradle 读取签名
+        working-directory: android
+        run: |
+          python3 - <<'PY'
+          import re
+          p = 'app/build.gradle'
+          s = open(p).read()
+          # 在 android {} 块内注入 signingConfigs 与 buildTypes.release 签名引用
+          if 'signingConfigs' not in s:
+              s = s.replace(
+                  'android {',
+                  '''android {
+                      def keystoreProperties = new Properties()
+                      def keystoreFile = rootProject.file('app/keystore.properties')
+                      if (keystoreFile.exists()) {
+                          keystoreProperties.load(new FileInputStream(keystoreFile))
+                      }
+                      signingConfigs {
+                          release {
+                              if (keystoreFile.exists()) {
+                                  storeFile file(keystoreProperties['storeFile'])
+                                  storePassword keystoreProperties['storePassword']
+                                  keyAlias keystoreProperties['keyAlias']
+                                  keyPassword keystoreProperties['keyPassword']
+                              }
+                          }
+                      }''',
+                  1,
+              )
+          if 'signingConfig signingConfigs.release' not in s:
+              s = s.replace(
+                  'buildTypes {',
+                  '''buildTypes {
+                      release {
+                          signingConfig signingConfigs.release
+                          minifyEnabled false
+                      }''',
+                  1,
+              )
+          open(p, 'w').write(s)
+          PY
+
+      - working-directory: android
+        run: ./gradlew bundleRelease --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tuilemei-android-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          retention-days: 90
+
+  # ----------------------------------------------------------------
+  # Job 4: iOS 构建验证（模拟器，每次推送）
   # ----------------------------------------------------------------
   ios-build:
     name: iOS 构建验证
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-
-      - name: 安装依赖
-        run: pnpm install --frozen-lockfile
-
-      - name: 构建 Web 资源
-        run: pnpm run build
-
-      - name: 添加 iOS 平台
-        run: npx cap add ios
-
-      - name: 同步 Web 资源到原生工程
-        run: npx cap sync ios
-
-      - name: 构建 iOS App（模拟器，无签名）
-        working-directory: ios/App
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - run: npx cap add ios
+      - run: npx cap sync ios
+      - working-directory: ios/App
         run: |
           xcodebuild -workspace App.xcworkspace \
             -scheme App \
@@ -156,10 +202,98 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             build
-
-      - name: 上传 .app 产物
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: tuilemei-ios-app
           path: ios/App/build/Build/Products/Debug-iphonesimulator/*.app
           retention-days: 30
+
+  # ----------------------------------------------------------------
+  # Job 5: iOS TestFlight 上传（仅打 tag 时，需 Apple 凭证 secrets）
+  # ----------------------------------------------------------------
+  ios-testflight:
+    name: iOS TestFlight 上传
+    runs-on: macos-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    env:
+      APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+      IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+      IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+      IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - run: npx cap add ios
+      - run: npx cap sync ios
+
+      - name: 检查 Apple 凭证是否已配置
+        id: check
+        run: |
+          if [ -z "$APP_STORE_CONNECT_API_KEY" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "::warning::未配置 Apple 凭证 secrets，跳过 TestFlight 上传。请见仓库 README 配置后重跑。"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 导入签名证书与描述文件
+        if: steps.check.outputs.skip == 'false'
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+
+      - name: 安装描述文件
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/tuilemei.mobileprovision
+
+      - name: 构建 Release IPA
+        if: steps.check.outputs.skip == 'false'
+        working-directory: ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            -archivePath build/App.xcarchive \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=$IOS_TEAM_ID
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath build/ipa
+
+      - name: 上传到 TestFlight
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          # 写入 App Store Connect API key
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY" > ~/.appstoreconnect/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_ID.p8
+          xcrun altool --upload-app \
+            -f ios/App/build/ipa/*.ipa \
+            -t ios \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            --verbose
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.check.outputs.skip == 'false'
+        with:
+          name: tuilemei-ios-ipa
+          path: ios/App/build/ipa/*.ipa
+          retention-days: 90
