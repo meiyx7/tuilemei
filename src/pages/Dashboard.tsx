@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, CalendarCheck, Coins, Hourglass, IdCard } from "lucide-react";
+import { ArrowRight, CalendarCheck, Coins, Hourglass, IdCard, Settings } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import {
   calcPension,
@@ -14,10 +14,10 @@ import CheckinButton from "@/components/CheckinButton";
 import MetricCard from "@/components/MetricCard";
 import SectionHeader from "@/components/SectionHeader";
 import Timeline from "@/components/Timeline";
-import OnboardingBanner from "@/components/OnboardingBanner";
 
 export default function Dashboard() {
   const profile = useStore((s) => s.profile);
+  const onboarded = useStore((s) => s.onboarded);
   const retirement = calcRetirementAge(profile);
   const pension = calcPension(profile);
 
@@ -35,9 +35,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-10">
-      <OnboardingBanner />
-
-      {/* 头条：倒计时 + 打卡 */}
+      {/* 头条：倒计时主视觉 + 打卡 */}
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr]">
         <CountdownHero
           retirement={retirement}
@@ -47,6 +45,16 @@ export default function Dashboard() {
         <div className="card-paper flex flex-col items-center justify-center gap-6 p-6 md:p-8">
           <SectionHeader eyebrow="每日仪式" title="今日打卡" align="center" />
           <CheckinButton />
+          {!onboarded && (
+            <Link
+              to="/profile"
+              className="flex items-center gap-1.5 text-xs text-slate transition-colors hover:text-ink"
+            >
+              <Settings size={12} />
+              填写你的真实档案，重算倒计时
+              <ArrowRight size={12} />
+            </Link>
+          )}
         </div>
       </section>
 

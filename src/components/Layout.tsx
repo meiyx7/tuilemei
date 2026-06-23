@@ -1,9 +1,9 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Link } from "react-router-dom";
+import { Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/", label: "仪表盘", en: "Dashboard" },
-  { to: "/profile", label: "个人档案", en: "Profile" },
   { to: "/calc", label: "退休测算", en: "Forecast" },
   { to: "/history", label: "打卡历史", en: "Almanac" },
 ];
@@ -54,6 +54,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </NavLink>
               );
             })}
+            {/* 个人档案：设置按钮入口，不与其他 tab 并列 */}
+            <Link
+              to="/profile"
+              aria-label="个人档案设置"
+              className={cn(
+                "ml-1 grid h-8 w-8 place-items-center rounded-[3px] border transition-colors",
+                pathname === "/profile"
+                  ? "border-ink text-ink"
+                  : "border-card-edge text-slate hover:border-ink hover:text-ink",
+              )}
+            >
+              <Settings size={15} />
+            </Link>
           </nav>
         </div>
       </header>
