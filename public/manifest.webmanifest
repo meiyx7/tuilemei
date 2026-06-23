@@ -1,0 +1,20 @@
+{
+  "name": "退了没 · 退休进度年鉴",
+  "short_name": "退了没",
+  "description": "每日打卡，测算你的退休时间与养老金。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4efe3",
+  "theme_color": "#b23a2e",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

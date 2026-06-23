@@ -19,7 +19,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-card-edge/70 bg-paper/85 backdrop-blur-md">
+      <header
+        className="sticky top-0 z-30 border-b border-card-edge/70 bg-paper/85 backdrop-blur-md"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <div className="container flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-baseline gap-3">
             <h1 className="font-display text-2xl font-black tracking-tightish text-ink">
@@ -55,7 +58,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="container py-8 md:py-12">{children}</main>
-      <footer className="container pb-10 pt-4">
+      <footer
+        className="container pb-10 pt-4"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2.5rem)" }}
+      >
         <div className="almanac-rule mb-4" />
         <p className="text-xs leading-relaxed text-slate">
           「退了没」为个人退休进度追踪与养老金测算工具，测算依据 2025 年渐进式延迟退休政策与城镇职工基本养老保险计发办法的简化模型，
