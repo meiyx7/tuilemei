@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --paper: #f4efe3;
+    --ink: #1c1a17;
+  }
+
+  html {
+    font-family: "Spectral", Georgia, serif;
+    color: var(--ink);
+    background-color: var(--paper);
+    line-height: 1.6;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(28, 26, 23, 0.04) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+
+  ::selection {
+    background-color: rgba(178, 58, 46, 0.18);
+    color: #1c1a17;
+  }
+
+  /* form controls inherit the almanac typography */
+  input,
+  select,
+  textarea,
+  button {
+    font-family: inherit;
+  }
+}
+
+@layer components {
+  .almanac-rule {
+    background-image: linear-gradient(
+      to right,
+      transparent,
+      rgba(28, 26, 23, 0.25) 18%,
+      rgba(28, 26, 23, 0.25) 82%,
+      transparent
+    );
+    height: 1px;
+  }
+
+  .field-underline {
+    background-image: linear-gradient(to right, #1c1a17, #1c1a17);
+    background-size: 100% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+  }
+
+  .num {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .label-eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.6875rem;
+    color: #5b6b6a;
+  }
+
+  .card-paper {
+    background-color: #fbf8f0;
+    border: 1px solid #e2d9c3;
+    box-shadow: 0 1px 0 rgba(28, 26, 23, 0.04), 0 12px 30px -18px rgba(28, 26, 23, 0.18);
+  }
+
+  .stamp-text {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+}
+
+/* thin custom scrollbar for inner scroll areas */
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(28, 26, 23, 0.18);
+  border-radius: 999px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
