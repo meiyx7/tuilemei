@@ -40,6 +40,8 @@ export async function shareElement(
       style: {
         boxSizing: "border-box",
         width: `${renderWidth + padding * 2 + 2}px`,
+        // 高度自适应内容，避免固定宽度后内容重排导致截图被裁剪
+        height: "auto",
         padding: `${padding}px`,
         border: "1px solid rgba(28,26,23,0.15)",
         borderRadius: "8px",
