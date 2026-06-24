@@ -1,6 +1,8 @@
-import { NavLink, useLocation, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ProfileModal from "@/components/ProfileModal";
 
 const NAV = [
   { to: "/", label: "仪表盘", en: "Dashboard" },
@@ -14,9 +16,18 @@ function todayLabel(): string {
   return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 星期${weekdays[d.getDay()]}`;
 }
 
-/** 顶部刊头 + 导航 */
+/** 顶部刊头 + 导航 + 档案设置弹框 */
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  // 监听其他页面派发的"打开档案弹框"事件（如 Dashboard 的引导链接）
+  useEffect(() => {
+    const onOpen = () => setProfileOpen(true);
+    window.addEventListener("open-profile-modal", onOpen);
+    return () => window.removeEventListener("open-profile-modal", onOpen);
+  }, []);
+
   return (
     <div className="min-h-screen">
       <header
@@ -54,19 +65,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </NavLink>
               );
             })}
-            {/* 个人档案：设置按钮入口，不与其他 tab 并列 */}
-            <Link
-              to="/profile"
+            {/* 个人档案：设置按钮入口，点击打开弹框 */}
+            <button
+              onClick={() => setProfileOpen(true)}
               aria-label="个人档案设置"
               className={cn(
                 "ml-1 grid h-8 w-8 place-items-center rounded-[3px] border transition-colors",
-                pathname === "/profile"
-                  ? "border-ink text-ink"
-                  : "border-card-edge text-slate hover:border-ink hover:text-ink",
+                "border-card-edge text-slate hover:border-ink hover:text-ink",
               )}
             >
               <Settings size={15} />
-            </Link>
+            </button>
           </nav>
         </div>
       </header>
@@ -82,6 +91,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           实际退休年龄与待遇以参保地社保经办机构核定为准。
         </p>
       </footer>
+
+      {/* 个人档案设置弹框 */}
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }

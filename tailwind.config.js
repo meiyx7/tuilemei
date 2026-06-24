@@ -64,11 +64,18 @@ export default {
           "0%": { strokeDashoffset: "var(--circ)" },
           "100%": { strokeDashoffset: "var(--offset)" },
         },
+        stampFly: {
+          "0%": { transform: "var(--fly-from) scale(0.6)", opacity: "0" },
+          "20%": { opacity: "1" },
+          "70%": { transform: "var(--fly-to) scale(1.1)", opacity: "1" },
+          "100%": { transform: "var(--fly-to) scale(0.9)", opacity: "0" },
+        },
       },
       animation: {
         stampDown: "stampDown 0.55s cubic-bezier(0.2,0.8,0.2,1) both",
         riseIn: "riseIn 0.6s cubic-bezier(0.2,0.8,0.2,1) both",
         wipeIn: "wipeIn 0.7s cubic-bezier(0.2,0.8,0.2,1) both",
+        stampFly: "stampFly 1.1s cubic-bezier(0.3,0.7,0.3,1) forwards",
       },
     },
   },

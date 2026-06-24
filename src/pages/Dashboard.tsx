@@ -80,14 +80,14 @@ export default function Dashboard() {
             careerProgress={careerProgress}
           />
           {!onboarded && (
-            <Link
-              to="/profile"
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("open-profile-modal"))}
               className="flex items-center gap-1.5 self-start text-xs text-slate transition-colors hover:text-ink"
             >
               <Settings size={12} />
               填写你的真实档案，重算倒计时
               <ArrowRight size={12} />
-            </Link>
+            </button>
           )}
         </section>
 
