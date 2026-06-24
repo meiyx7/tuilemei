@@ -27,22 +27,52 @@ export async function shareElement(
     filename = "退了没-退休进度.png",
   } = opts;
 
-  // 1. 全屏遮罩：盖住页面，显示"正在生成"提示
+  // 1. 全屏遮罩：盖住页面，显示"正在生成"提示卡片
   const overlay = document.createElement("div");
   overlay.style.cssText = [
     "position: fixed",
     "inset: 0",
     "z-index: 9999",
-    "background-color: rgba(244,239,227,0.85)",
-    "backdrop-filter: blur(2px)",
+    "background-color: rgba(28,26,23,0.35)",
+    "backdrop-filter: blur(4px)",
+    "-webkit-backdrop-filter: blur(4px)",
     "display: flex",
     "align-items: center",
     "justify-content: center",
   ].join(";");
-  const hint = document.createElement("div");
+  const card = document.createElement("div");
+  card.style.cssText = [
+    "display: flex",
+    "align-items: center",
+    "gap: 12px",
+    "padding: 18px 24px",
+    "background-color: #f5f1e8",
+    "border: 1px solid rgba(28,26,23,0.12)",
+    "border-radius: 12px",
+    "box-shadow: 0 12px 32px rgba(28,26,23,0.18)",
+  ].join(";");
+  // 旋转加载图标（SVG，与应用印章色调一致）
+  const spinner = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  spinner.setAttribute("width", "20");
+  spinner.setAttribute("height", "20");
+  spinner.setAttribute("viewBox", "0 0 24 24");
+  spinner.setAttribute("fill", "none");
+  spinner.style.cssText = "animation: tlm-spin 0.8s linear infinite;";
+  spinner.innerHTML =
+    '<circle cx="12" cy="12" r="9" stroke="#C8893B" stroke-opacity="0.25" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="#C8893B" stroke-width="3" stroke-linecap="round"/>';
+  const hint = document.createElement("span");
   hint.textContent = "正在生成分享图片…";
-  hint.style.cssText = "font-size:14px;color:#6b6358;";
-  overlay.appendChild(hint);
+  hint.style.cssText = "font-size:14px;color:#3c3933;font-weight:500;";
+  card.appendChild(spinner);
+  card.appendChild(hint);
+  overlay.appendChild(card);
+  // 注入旋转动画（若页面尚未定义）
+  if (!document.getElementById("tlm-spin-keyframe")) {
+    const style = document.createElement("style");
+    style.id = "tlm-spin-keyframe";
+    style.textContent = "@keyframes tlm-spin { to { transform: rotate(360deg); } }";
+    document.head.appendChild(style);
+  }
   document.body.appendChild(overlay);
 
   // 2. 保存原样式，临时脱离文档流 + 加 padding/边框
