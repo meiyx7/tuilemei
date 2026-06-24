@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatMoney } from "@/lib/pension";
+import { formatMoney, todayStr } from "@/lib/pension";
+import { useStore } from "@/store/useStore";
 import type { PensionResult, RetirementAgeResult } from "@/lib/types";
 import ProgressRing from "./ProgressRing";
+import Stamp from "./Stamp";
 
 interface CountdownHeroProps {
   retirement: RetirementAgeResult;
@@ -10,7 +13,10 @@ interface CountdownHeroProps {
   careerProgress: number;
 }
 
-/** 退休倒计时主视觉：环形进度 + 超大衬线倒计时数字 */
+/**
+ * 退休倒计时主视觉：环形进度 + 超大衬线倒计时数字。
+ * 圆环同时承担每日打卡功能——点击圆环即打卡，盖章动画在圆环上播放。
+ */
 export default function CountdownHero({
   retirement,
   pension,
@@ -19,9 +25,20 @@ export default function CountdownHero({
   const { remaining } = pension;
   const retired = remaining.totalDays <= 0;
 
+  const checked = useStore((s) => s.isCheckedInToday());
+  const checkinToday = useStore((s) => s.checkinToday);
+  const streak = useStore((s) => s.streak());
+  const [justChecked, setJustChecked] = useState(false);
+
+  const handleCheckin = () => {
+    if (checked) return;
+    checkinToday();
+    setJustChecked(true);
+  };
+
   return (
-    <div className="card-paper relative overflow-hidden p-6 md:p-8">
-      {/* 装饰：右上角邮戳（缩小、淡化、移至更靠角的位置，避免喧宾夺主） */}
+    <div className="relative overflow-hidden">
+      {/* 装饰：右上角邮戳（缩小、淡化，避免喧宾夺主） */}
       <div className="pointer-events-none absolute -right-8 -top-8 rotate-[-11deg] opacity-[0.12]">
         <svg width="76" height="76" viewBox="0 0 120 120" fill="none">
           <circle cx="60" cy="60" r="54" stroke="#B23A2E" strokeWidth="2" />
@@ -51,17 +68,54 @@ export default function CountdownHero({
       </div>
 
       <div className="flex flex-col items-center gap-8 md:flex-row md:items-center md:gap-10">
-        {/* 环形进度（加大并居中，作为主视觉） */}
-        <ProgressRing value={careerProgress} size={220} stroke={11} className="shrink-0">
-          <div className="flex flex-col items-center">
-            <span className="label-eyebrow">已过</span>
-            <span className="num text-3xl font-semibold text-ink">
-              {(careerProgress * 100).toFixed(0)}
-              <span className="text-base">%</span>
-            </span>
-            <span className="text-[0.7rem] text-slate">职业生涯</span>
-          </div>
-        </ProgressRing>
+        {/* 环形进度 —— 同时是打卡按钮 */}
+        <div className="relative shrink-0">
+          <button
+            onClick={handleCheckin}
+            disabled={checked}
+            className={cn(
+              "group relative grid place-items-center rounded-full transition-transform duration-200",
+              "active:scale-95",
+              !checked && "cursor-pointer",
+            )}
+            aria-label={checked ? "今日已打卡" : "点击圆环打卡"}
+          >
+            <ProgressRing value={careerProgress} size={220} stroke={11}>
+              <div className="flex flex-col items-center">
+                <span className="label-eyebrow">已过</span>
+                <span className="num text-3xl font-semibold text-ink">
+                  {(careerProgress * 100).toFixed(0)}
+                  <span className="text-base">%</span>
+                </span>
+                <span className="text-[0.7rem] text-slate">职业生涯</span>
+                {/* 打卡状态指示 */}
+                <span
+                  className={cn(
+                    "num mt-2 rounded-full border px-2 py-0.5 text-[0.6rem] font-medium transition-colors",
+                    checked
+                      ? "border-stamp/30 text-stamp/70"
+                      : "border-stamp/50 text-stamp group-hover:bg-stamp group-hover:text-paper",
+                  )}
+                >
+                  {checked ? `✓ 连续 ${streak} 天` : "点击打卡"}
+                </span>
+              </div>
+            </ProgressRing>
+          </button>
+
+          {/* 刚打卡：盖大邮戳动画 */}
+          {checked && justChecked && (
+            <div className="pointer-events-none absolute inset-0 grid place-items-center">
+              <Stamp label="已打卡" sub={todayStr().slice(5)} size="lg" animate />
+            </div>
+          )}
+          {/* 已打卡（非刚打）：角落小邮戳 */}
+          {checked && !justChecked && (
+            <div className="pointer-events-none absolute -right-2 -top-2 rotate-[-11deg]">
+              <Stamp label="已打卡" sub={todayStr().slice(5)} size="sm" />
+            </div>
+          )}
+        </div>
 
         {/* 倒计时数字 */}
         <div className="flex w-full flex-1 flex-col gap-4">

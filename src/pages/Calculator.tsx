@@ -23,7 +23,7 @@ export default function Calculator() {
   return (
     <div className="flex flex-col gap-10">
       <SectionHeader
-        eyebrow="退休测算 · Forecast"
+        eyebrow="退休账本 · Ledger"
         title="你的退休账本"
         desc="依据 2025 年渐进式延迟退休政策与城镇职工基本养老保险计发办法的简化模型测算。"
       />

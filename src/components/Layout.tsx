@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/", label: "仪表盘", en: "Dashboard" },
-  { to: "/calc", label: "退休测算", en: "Forecast" },
+  { to: "/calc", label: "退休账本", en: "Ledger" },
   { to: "/history", label: "打卡历史", en: "Almanac" },
 ];
 
