@@ -75,7 +75,7 @@ export async function shareElement(
   }
   document.body.appendChild(overlay);
 
-  // 2. 保存原样式，临时脱离文档流 + 加 padding/边框
+  // 2. 保存原样式，临时脱离文档流移到屏幕外 + 加 padding/边框/背景
   const prev = {
     position: el.style.position,
     left: el.style.left,
@@ -87,19 +87,23 @@ export async function shareElement(
     width: el.style.width,
     boxSizing: el.style.boxSizing,
     margin: el.style.margin,
+    background: el.style.background,
+    backgroundColor: el.style.backgroundColor,
   };
   const renderWidth = el.getBoundingClientRect().width;
-  // 脱离文档流，移到屏幕左上角（被遮罩盖住），宽度变化不影响页面布局
+  // 脱离文档流移到屏幕外，宽度变化不影响页面布局，且不会被用户看到
   el.style.position = "fixed";
-  el.style.left = "0";
+  el.style.left = "-99999px";
   el.style.top = "0";
-  el.style.zIndex = "10000";
+  el.style.zIndex = "0";
   el.style.boxSizing = "border-box";
   el.style.width = `${renderWidth + padding * 2 + 2}px`;
   el.style.padding = `${padding}px`;
   el.style.border = "1px solid rgba(28,26,23,0.15)";
   el.style.borderRadius = "8px";
   el.style.margin = "0";
+  // 确保背景不透明（脱离原父容器后可能丢失背景）
+  el.style.backgroundColor = "#f5f1e8";
 
   // 等待两帧确保样式与布局完全生效
   await new Promise((r) => requestAnimationFrame(() => r(null)));
@@ -178,6 +182,8 @@ export async function shareElement(
     el.style.width = prev.width;
     el.style.boxSizing = prev.boxSizing;
     el.style.margin = prev.margin;
+    el.style.background = prev.background;
+    el.style.backgroundColor = prev.backgroundColor;
     overlay.remove();
   }
 }
