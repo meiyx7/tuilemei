@@ -39,10 +39,7 @@ export default function Dashboard() {
     if (!shareRef.current) return;
     setSharing(true);
     try {
-      await shareElement(shareRef.current, {
-        hideElements: shareBtnRef.current ? [shareBtnRef.current] : [],
-        padding: 36,
-      });
+      await shareElement(shareRef.current, { padding: 36 });
     } finally {
       setSharing(false);
     }
@@ -50,30 +47,31 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-12">
+      {/* 分享按钮（独立于截图区域，截图时不会被截入，用户可实时看到状态） */}
+      <div className="flex justify-end">
+        <button
+          ref={shareBtnRef}
+          onClick={handleShare}
+          disabled={sharing}
+          className="flex shrink-0 items-center gap-1.5 rounded-[3px] border border-card-edge px-3 py-1.5 text-xs text-slate transition-colors hover:border-ink hover:text-ink disabled:opacity-50"
+        >
+          {sharing ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : (
+            <Share2 size={13} />
+          )}
+          {sharing ? "生成中…" : "分享"}
+        </button>
+      </div>
+
       {/* 可分享区域：倒计时主视觉 + 进度轴（一体化，无卡片割裂） */}
       <div ref={shareRef} className="flex flex-col gap-10">
         {/* 头条：倒计时主视觉（圆环即打卡入口） */}
         <section className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-4">
-            <SectionHeader
-              eyebrow="退休进度 · Countdown"
-              title="离退休还有多久"
-              className="flex-1"
-            />
-            <button
-              ref={shareBtnRef}
-              onClick={handleShare}
-              disabled={sharing}
-              className="flex shrink-0 items-center gap-1.5 rounded-[3px] border border-card-edge px-3 py-1.5 text-xs text-slate transition-colors hover:border-ink hover:text-ink disabled:opacity-50"
-            >
-              {sharing ? (
-                <Loader2 size={13} className="animate-spin" />
-              ) : (
-                <Share2 size={13} />
-              )}
-              {sharing ? "生成中" : "分享"}
-            </button>
-          </div>
+          <SectionHeader
+            eyebrow="退休进度 · Countdown"
+            title="您退了没"
+          />
           <CountdownHero
             retirement={retirement}
             pension={pension}

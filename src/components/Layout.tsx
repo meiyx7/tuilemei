@@ -36,9 +36,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       >
         <div className="container flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-baseline gap-3">
-            <h1 className="font-display text-2xl font-black tracking-tightish text-ink">
-              退了没
-            </h1>
             <span className="hidden text-xs text-slate sm:inline">
               · 退休进度年鉴 ·
             </span>

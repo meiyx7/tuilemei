@@ -89,16 +89,16 @@ export default function Timeline({ nodes, className }: TimelineProps) {
                   )}
                 />
               </span>
-              <div className="flex flex-col">
+              <div className="flex w-full flex-col items-center">
                 <span
                   className={cn(
-                    "font-display text-sm font-semibold",
+                    "whitespace-nowrap font-display text-sm font-semibold",
                     node.current ? "text-amber" : node.past ? "text-ink" : "text-slate",
                   )}
                 >
                   {node.label}
                 </span>
-                <span className="num text-[0.7rem] text-slate">{node.date}</span>
+                <span className="num mt-0.5 whitespace-nowrap text-[0.7rem] text-slate">{node.date}</span>
               </div>
             </div>
           ))}

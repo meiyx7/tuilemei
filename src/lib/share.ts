@@ -1,8 +1,6 @@
 import { toPng } from "html-to-image";
 
 interface ShareOptions {
-  /** 截图前需要临时隐藏的元素（如分享按钮本身），避免状态文字被截入 */
-  hideElements?: HTMLElement[];
   /** 截图区域内边距（px），避免内容紧贴边框 */
   padding?: number;
   filename?: string;
@@ -10,23 +8,18 @@ interface ShareOptions {
 
 /**
  * 将目标 DOM 截图为 PNG 并分享。
- * 优先使用 Web Share API（移动端原生分享面板），不支持时回退为下载图片。
+ * 优先使用 Web Share API（移动端原生分享面板，带缩略图），不支持时回退为下载图片。
  */
 export async function shareElement(
   el: HTMLElement,
   opts: ShareOptions = {},
 ): Promise<void> {
   const {
-    hideElements = [],
-    padding = 32,
+    padding = 36,
     filename = "退了没-退休进度.png",
   } = opts;
 
-  // 1. 临时隐藏指定元素
-  const prevDisplay = hideElements.map((e) => e.style.display);
-  hideElements.forEach((e) => (e.style.display = "none"));
-
-  // 2. 临时给目标加内边距与边框样式，并固定宽度避免换行，截图后恢复
+  // 1. 临时给目标加内边距与边框样式，并固定宽度避免换行，截图后恢复
   const prevPadding = el.style.padding;
   const prevBorder = el.style.border;
   const prevBorderRadius = el.style.borderRadius;
@@ -49,13 +42,18 @@ export async function shareElement(
       pixelRatio: 2,
       backgroundColor: "#f5f1e8",
       cacheBust: true,
+      // 跳过不可见元素，避免隐藏元素干扰
+      skipFonts: false,
     });
 
     const res = await fetch(dataUrl);
     const blob = await res.blob();
+    // 确保 blob 非空
+    if (blob.size === 0) throw new Error("截图为空");
     const file = new File([blob], filename, { type: "image/png" });
 
     // 优先原生分享（需 https 或 localhost，且支持文件分享）
+    // canShare 检查确保平台支持文件分享，原生面板会显示缩略图
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({
@@ -64,8 +62,10 @@ export async function shareElement(
           text: "看看我离退休还有多久",
         });
         return;
-      } catch {
-        // 用户取消或分享失败，回退下载
+      } catch (err) {
+        // 用户取消分享（AbortError）则直接返回，不触发下载
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        // 其他错误回退下载
       }
     }
 
@@ -75,8 +75,7 @@ export async function shareElement(
     a.download = filename;
     a.click();
   } finally {
-    // 3. 恢复样式与显示
-    hideElements.forEach((e, i) => (e.style.display = prevDisplay[i]));
+    // 2. 恢复样式
     el.style.padding = prevPadding;
     el.style.border = prevBorder;
     el.style.borderRadius = prevBorderRadius;
