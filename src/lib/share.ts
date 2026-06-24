@@ -14,9 +14,9 @@ interface ShareOptions {
  * - 原生 App（Capacitor）：写入缓存目录后调用原生分享面板（支持图片分享）。
  * - 浏览器：优先 Web Share API（带缩略图），不支持时回退为下载图片。
  *
- * 实现要点：截图时将元素临时 position:fixed 脱离文档流并移到屏幕左上角，
- * 加 padding/边框后截图。由于脱离文档流，元素宽度变化不会影响页面布局，
- * 配合全屏遮罩让用户看到"正在生成"提示而非样式变化。
+ * 实现要点：克隆目标元素到屏幕外可见区域（top:0, left:0, opacity:0 被遮罩盖住），
+ * 给克隆体加 padding/边框后截图。原元素完全不动，页面布局无任何变化。
+ * 克隆体保留在可视渲染区（不能 display:none 或负坐标），确保 html-to-image 能正确截图。
  */
 export async function shareElement(
   el: HTMLElement,
@@ -32,7 +32,7 @@ export async function shareElement(
   overlay.style.cssText = [
     "position: fixed",
     "inset: 0",
-    "z-index: 9999",
+    "z-index: 99990",
     "background-color: rgba(28,26,23,0.35)",
     "backdrop-filter: blur(4px)",
     "-webkit-backdrop-filter: blur(4px)",
@@ -75,42 +75,32 @@ export async function shareElement(
   }
   document.body.appendChild(overlay);
 
-  // 2. 保存原样式，临时脱离文档流移到屏幕外 + 加 padding/边框/背景
-  const prev = {
-    position: el.style.position,
-    left: el.style.left,
-    top: el.style.top,
-    zIndex: el.style.zIndex,
-    padding: el.style.padding,
-    border: el.style.border,
-    borderRadius: el.style.borderRadius,
-    width: el.style.width,
-    boxSizing: el.style.boxSizing,
-    margin: el.style.margin,
-    background: el.style.background,
-    backgroundColor: el.style.backgroundColor,
-  };
+  // 2. 克隆目标元素到屏幕外可见区域（被遮罩盖住，用户看不到）
   const renderWidth = el.getBoundingClientRect().width;
-  // 脱离文档流移到屏幕外，宽度变化不影响页面布局，且不会被用户看到
-  el.style.position = "fixed";
-  el.style.left = "-99999px";
-  el.style.top = "0";
-  el.style.zIndex = "0";
-  el.style.boxSizing = "border-box";
-  el.style.width = `${renderWidth + padding * 2 + 2}px`;
-  el.style.padding = `${padding}px`;
-  el.style.border = "1px solid rgba(28,26,23,0.15)";
-  el.style.borderRadius = "8px";
-  el.style.margin = "0";
-  // 确保背景不透明（脱离原父容器后可能丢失背景）
-  el.style.backgroundColor = "#f5f1e8";
+  const clone = el.cloneNode(true) as HTMLElement;
+  // 克隆体定位到屏幕左上角（fixed），z-index 低于遮罩，被遮罩盖住
+  // 必须保留在可视渲染区（不能用 display:none 或负坐标），否则 html-to-image 截图为空
+  clone.style.cssText = [
+    "position: fixed",
+    "left: 0",
+    "top: 0",
+    "z-index: 99980",
+    "box-sizing: border-box",
+    `width: ${renderWidth + padding * 2 + 2}px`,
+    `padding: ${padding}px`,
+    "border: 1px solid rgba(28,26,23,0.15)",
+    "border-radius: 8px",
+    "margin: 0",
+    "background-color: #f5f1e8",
+  ].join(";");
+  document.body.appendChild(clone);
 
-  // 等待两帧确保样式与布局完全生效
+  // 等待两帧确保克隆体渲染完成
   await new Promise((r) => requestAnimationFrame(() => r(null)));
   await new Promise((r) => requestAnimationFrame(() => r(null)));
 
   try {
-    const dataUrl = await toPng(el, {
+    const dataUrl = await toPng(clone, {
       quality: 0.95,
       pixelRatio: 2,
       backgroundColor: "#f5f1e8",
@@ -171,19 +161,8 @@ export async function shareElement(
     a.download = filename;
     a.click();
   } finally {
-    // 3. 恢复原样式并移除遮罩
-    el.style.position = prev.position;
-    el.style.left = prev.left;
-    el.style.top = prev.top;
-    el.style.zIndex = prev.zIndex;
-    el.style.padding = prev.padding;
-    el.style.border = prev.border;
-    el.style.borderRadius = prev.borderRadius;
-    el.style.width = prev.width;
-    el.style.boxSizing = prev.boxSizing;
-    el.style.margin = prev.margin;
-    el.style.background = prev.background;
-    el.style.backgroundColor = prev.backgroundColor;
+    // 3. 移除克隆体和遮罩，原元素完全未动
+    clone.remove();
     overlay.remove();
   }
 }
