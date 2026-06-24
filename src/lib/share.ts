@@ -14,8 +14,9 @@ interface ShareOptions {
  * - 原生 App（Capacitor）：写入缓存目录后调用原生分享面板（支持图片分享）。
  * - 浏览器：优先 Web Share API（带缩略图），不支持时回退为下载图片。
  *
- * 实现要点：通过 html-to-image 的 style 选项在内部克隆时应用 padding/边框，
- * 原元素完全不修改，避免页面布局错乱。
+ * 实现要点：克隆目标元素到屏幕外的包裹容器中截图。
+ * 包裹容器提供 padding/边框/背景，克隆元素保持原始宽度与布局，
+ * 确保截图内容与页面完全一致，不被裁剪或偏移。
  */
 export async function shareElement(
   el: HTMLElement,
@@ -26,27 +27,41 @@ export async function shareElement(
     filename = "退了没-退休进度.png",
   } = opts;
 
-  // 固定宽度为当前渲染宽度 + padding/边框，防止加 padding 后容器收缩导致文字换行
+  // 1. 创建屏幕外的包裹容器，提供 padding/边框/背景
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText = [
+    "position: fixed",
+    "left: -99999px",
+    "top: 0",
+    "z-index: -1",
+    "pointer-events: none",
+    `padding: ${padding}px`,
+    "border: 1px solid rgba(28,26,23,0.15)",
+    "border-radius: 8px",
+    "background-color: #f5f1e8",
+    "box-sizing: border-box",
+    "display: inline-block",
+  ].join(";");
+
+  // 2. 克隆目标元素，保持原始宽度与布局
+  const clone = el.cloneNode(true) as HTMLElement;
+  // 克隆体宽度固定为原元素渲染宽度，确保内部布局与页面一致
   const renderWidth = el.getBoundingClientRect().width;
+  clone.style.width = `${renderWidth}px`;
+  clone.style.margin = "0";
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
 
   try {
-    const dataUrl = await toPng(el, {
+    // 等待一帧让克隆体渲染生效
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+    const dataUrl = await toPng(wrapper, {
       quality: 0.95,
       pixelRatio: 2,
       backgroundColor: "#f5f1e8",
       cacheBust: true,
       skipFonts: false,
-      // style 选项由 html-to-image 在内部克隆时应用，原元素不动
-      style: {
-        boxSizing: "border-box",
-        width: `${renderWidth + padding * 2 + 2}px`,
-        // 高度自适应内容，避免固定宽度后内容重排导致截图被裁剪
-        height: "auto",
-        padding: `${padding}px`,
-        border: "1px solid rgba(28,26,23,0.15)",
-        borderRadius: "8px",
-        margin: "0",
-      },
     });
 
     const res = await fetch(dataUrl);
@@ -107,8 +122,8 @@ export async function shareElement(
     a.href = dataUrl;
     a.download = filename;
     a.click();
-  } catch (err) {
-    console.error("截图失败", err);
-    throw err;
+  } finally {
+    // 3. 移除包裹容器
+    wrapper.remove();
   }
 }
