@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Check, RotateCcw } from "lucide-react";
+import { Check, LocateFixed, RotateCcw } from "lucide-react";
 import { useStore } from "@/store/useStore";
-import { PROVINCE_AVG_SALARY, PROVINCE_LIST } from "@/lib/pension";
+import { PROVINCE_AVG_SALARY, PROVINCE_LIST, detectProvince } from "@/lib/pension";
 import type { Gender, Identity, Profile as ProfileType } from "@/lib/types";
 import SectionHeader from "@/components/SectionHeader";
 import Field, { SelectInput, TextInput } from "@/components/Field";
@@ -15,6 +15,8 @@ export default function ProfilePage() {
 
   const [draft, setDraft] = useState<ProfileType>(profile);
   const [saved, setSaved] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locateHint, setLocateHint] = useState<string | null>(null);
 
   const set = <K extends keyof ProfileType>(key: K, value: ProfileType[K]) => {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -25,6 +27,38 @@ export default function ProfilePage() {
   const commitField = <K extends keyof ProfileType>(key: K, value: ProfileType[K]) => {
     if (profile[key] !== value) {
       updateProfile({ [key]: value } as Partial<ProfileType>);
+    }
+  };
+
+  /** 自动定位省份并填充社平工资 */
+  const handleLocate = async () => {
+    setLocating(true);
+    setLocateHint(null);
+    try {
+      const province = await detectProvince();
+      if (province) {
+        set("province", province);
+        const avg = PROVINCE_AVG_SALARY[province];
+        if (avg) {
+          set("socialAvgSalary", avg);
+          commitField("province", province);
+          commitField("socialAvgSalary", avg);
+        } else {
+          commitField("province", province);
+        }
+        setLocateHint(`已定位到 ${province}`);
+      } else {
+        setLocateHint("无法识别所在省份，请手动选择");
+      }
+    } catch (e) {
+      const msg = e instanceof GeolocationPositionError
+        ? e.code === 1 ? "定位授权被拒绝，请手动选择"
+          : e.code === 3 ? "定位超时，请手动选择"
+          : "定位失败，请手动选择"
+        : "定位失败，请手动选择";
+      setLocateHint(msg);
+    } finally {
+      setLocating(false);
     }
   };
 
@@ -85,28 +119,40 @@ export default function ProfilePage() {
               <option value="cadre">干部</option>
             </SelectInput>
           </Field>
-          <Field label="所在省份" hint="用于默认社平工资">
-            <SelectInput
-              value={draft.province}
-              onChange={(e) => {
-                const v = e.target.value;
-                set("province", v);
-                const avg = PROVINCE_AVG_SALARY[v];
-                if (avg) {
-                  set("socialAvgSalary", avg);
-                  commitField("province", v);
-                  commitField("socialAvgSalary", avg);
-                } else {
-                  commitField("province", v);
-                }
-              }}
-            >
-              {PROVINCE_LIST.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </SelectInput>
+          <Field label="所在省份" hint={locateHint ?? "用于默认社平工资，可点击右侧定位自动获取"}>
+            <div className="flex gap-2">
+              <SelectInput
+                value={draft.province}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  set("province", v);
+                  const avg = PROVINCE_AVG_SALARY[v];
+                  if (avg) {
+                    set("socialAvgSalary", avg);
+                    commitField("province", v);
+                    commitField("socialAvgSalary", avg);
+                  } else {
+                    commitField("province", v);
+                  }
+                }}
+                className="flex-1"
+              >
+                {PROVINCE_LIST.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </SelectInput>
+              <button
+                type="button"
+                onClick={handleLocate}
+                disabled={locating}
+                aria-label="自动定位省份"
+                className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[3px] border border-card-edge text-slate transition-colors hover:border-ink hover:text-ink disabled:opacity-50"
+              >
+                <LocateFixed size={15} className={locating ? "animate-spin" : ""} />
+              </button>
+            </div>
           </Field>
           <Field label="参加工作时间" hint="格式 YYYY-MM">
             <TextInput

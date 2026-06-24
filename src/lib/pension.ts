@@ -74,6 +74,47 @@ export const PROVINCE_AVG_SALARY: Record<string, number> = {
 
 export const PROVINCE_LIST = Object.keys(PROVINCE_AVG_SALARY);
 
+/**
+ * 通过浏览器定位 + Nominatim 逆地理编码自动识别所在省份。
+ * 成功返回 PROVINCE_LIST 中的省份名，失败返回 null。
+ */
+export async function detectProvince(): Promise<string | null> {
+  // 1. 获取经纬度
+  const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("浏览器不支持定位"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: false,
+      timeout: 10000,
+      maximumAge: 600000,
+    });
+  });
+
+  const { latitude, longitude } = pos.coords;
+
+  // 2. Nominatim 逆地理编码（免费、https、支持中文）
+  const url =
+    `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}` +
+    `&format=json&accept-language=zh`;
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error("逆地理编码请求失败");
+  const data = await res.json();
+  const stateName: string =
+    data?.address?.state || data?.address?.province || data?.address?.region || "";
+
+  if (!stateName) return null;
+
+  // 3. 映射到省份列表（返回值可能带"省/市/自治区"后缀，用子串匹配）
+  for (const p of PROVINCE_LIST) {
+    if (stateName.includes(p) || p.includes(stateName)) {
+      return p;
+    }
+  }
+  return null;
+}
+
 /** 个人账户记账利率假设（年化） */
 const PERSONAL_ACCOUNT_RATE = 0.04;
 /** 个人账户缴费比例（工资的 8%） */
