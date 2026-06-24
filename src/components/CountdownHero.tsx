@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatMoney, todayStr } from "@/lib/pension";
 import { useStore } from "@/store/useStore";
@@ -15,7 +15,8 @@ interface CountdownHeroProps {
 
 /**
  * 退休倒计时主视觉：环形进度 + 超大衬线倒计时数字。
- * 圆环同时承担每日打卡功能——点击圆环即打卡，盖章动画在圆环上播放。
+ * 圆环同时承担每日打卡功能——点击圆环即打卡，盖章动画在圆环上播放，
+ * 动画结束后自动消失，圆环下方标签变为"已打卡 N 天"。
  */
 export default function CountdownHero({
   retirement,
@@ -35,6 +36,13 @@ export default function CountdownHero({
     checkinToday();
     setJustChecked(true);
   };
+
+  // 盖章动画结束后（stampDown 0.55s + 缓冲）自动隐藏大邮戳
+  useEffect(() => {
+    if (!justChecked) return;
+    const id = setTimeout(() => setJustChecked(false), 900);
+    return () => clearTimeout(id);
+  }, [justChecked]);
 
   return (
     <div className="relative overflow-hidden">
@@ -88,31 +96,14 @@ export default function CountdownHero({
                   <span className="text-base">%</span>
                 </span>
                 <span className="text-[0.7rem] text-slate">职业生涯</span>
-                {/* 打卡状态指示 */}
-                <span
-                  className={cn(
-                    "num mt-2 rounded-full border px-2 py-0.5 text-[0.6rem] font-medium transition-colors",
-                    checked
-                      ? "border-stamp/30 text-stamp/70"
-                      : "border-stamp/50 text-stamp group-hover:bg-stamp group-hover:text-paper",
-                  )}
-                >
-                  {checked ? `✓ 连续 ${streak} 天` : "点击打卡"}
-                </span>
               </div>
             </ProgressRing>
           </button>
 
-          {/* 刚打卡：盖大邮戳动画 */}
+          {/* 刚打卡：盖大邮戳动画（动画结束后自动消失） */}
           {checked && justChecked && (
             <div className="pointer-events-none absolute inset-0 grid place-items-center">
               <Stamp label="已打卡" sub={todayStr().slice(5)} size="lg" animate />
-            </div>
-          )}
-          {/* 已打卡（非刚打）：角落小邮戳 */}
-          {checked && !justChecked && (
-            <div className="pointer-events-none absolute -right-2 -top-2 rotate-[-11deg]">
-              <Stamp label="已打卡" sub={todayStr().slice(5)} size="sm" />
             </div>
           )}
         </div>
@@ -152,6 +143,19 @@ export default function CountdownHero({
               <span className="num ml-2 font-semibold text-ink">
                 {retirement.retirementDate}
               </span>
+            </span>
+            {/* 打卡状态标签（动画结束后显示在这里） */}
+            <span
+              className={cn(
+                "num mt-1 inline-flex w-fit items-center gap-1 rounded-full border px-2.5 py-0.5 text-[0.65rem] font-medium transition-colors",
+                checked
+                  ? "border-stamp/40 bg-stamp/5 text-stamp"
+                  : "border-stamp/50 text-stamp",
+              )}
+            >
+              {checked
+                ? `✓ 已打卡 · 连续 ${streak} 天`
+                : "点击圆环打卡"}
             </span>
           </div>
         </div>

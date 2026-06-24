@@ -15,26 +15,45 @@ interface TimelineProps {
   className?: string;
 }
 
-/** 比较 "YYYY-MM" 与今日，返回 -1/0/1 */
-function compareYmWithToday(ym: string): number {
-  const node = parseYearMonth(ym);
-  const now = parseYearMonth(todayYm());
-  const nodeTotal = node.year * 12 + node.month;
-  const nowTotal = now.year * 12 + now.month;
-  return nodeTotal < nowTotal ? -1 : nodeTotal > nowTotal ? 1 : 0;
+/** "YYYY-MM" 转总月数 */
+function ymToMonths(ym: string): number {
+  const { year, month } = parseYearMonth(ym);
+  return year * 12 + month;
 }
 
-/** 退休进度轴：横向时间线，节点为邮戳样式。past/current 自动按日期推断。 */
+/**
+ * 退休进度轴：横向时间线，节点为邮戳样式。
+ * 节点按日期升序排列；"当前"作为虚拟节点插入到正确位置（今日所在区间）。
+ */
 export default function Timeline({ nodes, className }: TimelineProps) {
-  // 自动推断每个节点的 past / current 状态
-  const resolved = nodes.map((n) => {
-    const cmp = compareYmWithToday(n.date);
-    return {
-      ...n,
-      past: n.past ?? cmp <= 0,
-      current: n.current ?? cmp === 0,
-    };
-  });
+  const nowMonths = ymToMonths(todayYm());
+
+  // 1. 过滤掉显式的"当前"节点（date === 今日），后续统一插入
+  const realNodes = nodes.filter((n) => !n.current && ymToMonths(n.date) !== nowMonths);
+
+  // 2. 按日期升序排序
+  const sorted = [...realNodes].sort((a, b) => ymToMonths(a.date) - ymToMonths(b.date));
+
+  // 3. 插入"当前"节点到正确位置（第一个 date > 今日 的节点之前）
+  let insertIdx = sorted.length;
+  for (let i = 0; i < sorted.length; i++) {
+    if (ymToMonths(sorted[i].date) > nowMonths) {
+      insertIdx = i;
+      break;
+    }
+  }
+  const resolved = [
+    ...sorted.slice(0, insertIdx),
+    { label: "当前", date: todayYm(), current: true, past: true },
+    ...sorted.slice(insertIdx),
+  ];
+
+  // 4. 自动推断其余节点的 past 状态
+  const finalNodes = resolved.map((n) => ({
+    ...n,
+    past: n.past ?? ymToMonths(n.date) <= nowMonths,
+    current: n.current ?? false,
+  }));
 
   return (
     <div className={cn("w-full", className)}>
@@ -44,12 +63,15 @@ export default function Timeline({ nodes, className }: TimelineProps) {
         <div
           className="absolute left-0 top-[14px] h-px bg-amber transition-all duration-700"
           style={{
-            width: `${progressOfCurrent(resolved)}%`,
+            width: `${progressOfCurrent(finalNodes)}%`,
           }}
         />
-        <div className="relative grid grid-cols-4 gap-2">
-          {resolved.map((node) => (
-            <div key={node.label} className="flex flex-col items-center gap-2 text-center">
+        <div
+          className="relative grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${finalNodes.length}, minmax(0, 1fr))` }}
+        >
+          {finalNodes.map((node) => (
+            <div key={`${node.label}-${node.date}`} className="flex flex-col items-center gap-2 text-center">
               <span
                 className={cn(
                   "grid h-7 w-7 place-items-center rounded-full border-2 bg-card transition-colors",
@@ -89,7 +111,6 @@ export default function Timeline({ nodes, className }: TimelineProps) {
 function progressOfCurrent(nodes: { current?: boolean; past?: boolean }[]): number {
   const idx = nodes.findIndex((n) => n.current);
   if (idx === -1) {
-    // 没有当前节点：若全部已过则满进度，否则按最后一个已过节点计算
     const lastPastIdx = nodes.map((n) => n.past).lastIndexOf(true);
     if (lastPastIdx === -1) return 0;
     if (lastPastIdx === nodes.length - 1) return 100;

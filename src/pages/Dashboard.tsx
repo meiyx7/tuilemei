@@ -20,6 +20,7 @@ export default function Dashboard() {
   const pension = calcPension(profile);
 
   const shareRef = useRef<HTMLDivElement>(null);
+  const shareBtnRef = useRef<HTMLButtonElement>(null);
   const [sharing, setSharing] = useState(false);
 
   // 职业生涯进度：已工作月数 / 总工作月数（入职到退休）
@@ -38,7 +39,10 @@ export default function Dashboard() {
     if (!shareRef.current) return;
     setSharing(true);
     try {
-      await shareElement(shareRef.current);
+      await shareElement(shareRef.current, {
+        hideElements: shareBtnRef.current ? [shareBtnRef.current] : [],
+        padding: 36,
+      });
     } finally {
       setSharing(false);
     }
@@ -57,6 +61,7 @@ export default function Dashboard() {
               className="flex-1"
             />
             <button
+              ref={shareBtnRef}
               onClick={handleShare}
               disabled={sharing}
               className="flex shrink-0 items-center gap-1.5 rounded-[3px] border border-card-edge px-3 py-1.5 text-xs text-slate transition-colors hover:border-ink hover:text-ink disabled:opacity-50"
@@ -105,7 +110,6 @@ export default function Dashboard() {
           <Timeline
             nodes={[
               { label: "参加工作", date: profile.workStartDate },
-              { label: "当前", date: todayYm() },
               { label: "缴满 15 年", date: minContributionDate(profile.workStartDate, 15) },
               { label: "法定退休", date: retirement.retirementDate },
             ]}
