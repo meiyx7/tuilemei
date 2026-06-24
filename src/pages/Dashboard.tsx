@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Loader2, Settings, Share2 } from "lucide-react";
+import { ArrowRight, Settings } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import {
   calcPension,
@@ -20,8 +20,6 @@ export default function Dashboard() {
   const pension = calcPension(profile);
 
   const shareRef = useRef<HTMLDivElement>(null);
-  const shareBtnRef = useRef<HTMLButtonElement>(null);
-  const [sharing, setSharing] = useState(false);
 
   // 职业生涯进度：已工作月数 / 总工作月数（入职到退休）
   const workStartMonths = parseYearMonth(profile.workStartDate).year * 12 +
@@ -35,35 +33,24 @@ export default function Dashboard() {
     Math.min(1, (nowMonths - workStartMonths) / (retireMonths - workStartMonths || 1)),
   );
 
-  const handleShare = async () => {
-    if (!shareRef.current) return;
-    setSharing(true);
-    try {
-      await shareElement(shareRef.current, { padding: 36 });
-    } finally {
-      setSharing(false);
-    }
-  };
+  // 监听 Layout 派发的"触发分享"事件
+  useEffect(() => {
+    const onTrigger = async () => {
+      if (!shareRef.current) return;
+      // 回传 sharing=true 给 Layout
+      window.dispatchEvent(new CustomEvent("share-state", { detail: { sharing: true } }));
+      try {
+        await shareElement(shareRef.current, { padding: 36 });
+      } finally {
+        window.dispatchEvent(new CustomEvent("share-state", { detail: { sharing: false } }));
+      }
+    };
+    window.addEventListener("trigger-share", onTrigger);
+    return () => window.removeEventListener("trigger-share", onTrigger);
+  }, []);
 
   return (
     <div className="flex flex-col gap-12">
-      {/* 分享按钮（独立于截图区域，截图时不会被截入，用户可实时看到状态） */}
-      <div className="flex justify-end">
-        <button
-          ref={shareBtnRef}
-          onClick={handleShare}
-          disabled={sharing}
-          className="flex shrink-0 items-center gap-1.5 rounded-[3px] border border-card-edge px-3 py-1.5 text-xs text-slate transition-colors hover:border-ink hover:text-ink disabled:opacity-50"
-        >
-          {sharing ? (
-            <Loader2 size={13} className="animate-spin" />
-          ) : (
-            <Share2 size={13} />
-          )}
-          {sharing ? "生成中…" : "分享"}
-        </button>
-      </div>
-
       {/* 可分享区域：倒计时主视觉 + 进度轴（一体化，无卡片割裂） */}
       <div ref={shareRef} className="flex flex-col gap-10">
         {/* 头条：倒计时主视觉（圆环即打卡入口） */}

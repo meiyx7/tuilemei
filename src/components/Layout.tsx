@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Settings } from "lucide-react";
+import { Loader2, Settings, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProfileModal from "@/components/ProfileModal";
 
@@ -20,13 +20,29 @@ function todayLabel(): string {
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const isHome = pathname === "/";
 
-  // 监听其他页面派发的"打开档案弹框"事件（如 Dashboard 的引导链接）
+  // 监听其他页面派发的"打开档案弹框"事件
   useEffect(() => {
     const onOpen = () => setProfileOpen(true);
     window.addEventListener("open-profile-modal", onOpen);
     return () => window.removeEventListener("open-profile-modal", onOpen);
   }, []);
+
+  // 监听 Dashboard 回传的分享状态
+  useEffect(() => {
+    const onState = (e: Event) => {
+      const detail = (e as CustomEvent<{ sharing: boolean }>).detail;
+      setSharing(detail.sharing);
+    };
+    window.addEventListener("share-state", onState as EventListener);
+    return () => window.removeEventListener("share-state", onState as EventListener);
+  }, []);
+
+  const handleShare = () => {
+    window.dispatchEvent(new CustomEvent("trigger-share"));
+  };
 
   return (
     <div className="min-h-screen">
@@ -62,12 +78,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </NavLink>
               );
             })}
+            {/* 分享按钮：仅首页显示，置于设置按钮前方 */}
+            {isHome && (
+              <button
+                onClick={handleShare}
+                disabled={sharing}
+                aria-label="分享退休进度"
+                className={cn(
+                  "ml-1 grid h-8 w-8 place-items-center rounded-[3px] border transition-colors",
+                  "border-card-edge text-slate hover:border-ink hover:text-ink disabled:opacity-50",
+                )}
+              >
+                {sharing ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : (
+                  <Share2 size={15} />
+                )}
+              </button>
+            )}
             {/* 个人档案：设置按钮入口，点击打开弹框 */}
             <button
               onClick={() => setProfileOpen(true)}
               aria-label="个人档案设置"
               className={cn(
-                "ml-1 grid h-8 w-8 place-items-center rounded-[3px] border transition-colors",
+                "grid h-8 w-8 place-items-center rounded-[3px] border transition-colors",
                 "border-card-edge text-slate hover:border-ink hover:text-ink",
               )}
             >

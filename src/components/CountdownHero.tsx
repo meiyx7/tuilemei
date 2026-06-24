@@ -161,7 +161,7 @@ export default function CountdownHero({
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
               <CountPart n={remaining.years} unit="年" big />
               <CountPart n={remaining.months} unit="月" />
-              <span className="num text-sm text-slate">
+              <span className="num whitespace-nowrap text-sm text-slate">
                 · 约 {formatMoney(remaining.totalDays)} 天
               </span>
             </div>
