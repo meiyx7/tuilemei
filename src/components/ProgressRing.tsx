@@ -9,12 +9,16 @@ interface ProgressRingProps {
   className?: string;
   /** 中心内容 */
   children?: React.ReactNode;
-  trackClass?: string;
-  barClass?: string;
+  /** 轨道颜色（默认 card-edge） */
+  trackColor?: string;
+  /** 进度条颜色（默认 amber） */
+  barColor?: string;
 }
 
 /**
  * 环形进度（SVG），带入场绘制动画。
+ * 颜色使用内联 stroke 属性（而非 currentColor + Tailwind 类），
+ * 以确保 html-to-image 截图时颜色不丢失。
  */
 export default function ProgressRing({
   value,
@@ -22,8 +26,8 @@ export default function ProgressRing({
   stroke = 10,
   className,
   children,
-  trackClass = "text-card-edge",
-  barClass = "text-amber",
+  trackColor = "#E2D9C3",
+  barColor = "#C8893B",
 }: ProgressRingProps) {
   const clamped = Math.max(0, Math.min(1, value));
   const r = (size - stroke) / 2;
@@ -56,8 +60,7 @@ export default function ProgressRing({
           r={r}
           fill="none"
           strokeWidth={stroke}
-          className={trackClass}
-          stroke="currentColor"
+          stroke={trackColor}
         />
         <circle
           cx={size / 2}
@@ -66,8 +69,7 @@ export default function ProgressRing({
           fill="none"
           strokeWidth={stroke}
           strokeLinecap="round"
-          className={barClass}
-          stroke="currentColor"
+          stroke={barColor}
           strokeDasharray={circ}
           strokeDashoffset={animOffset}
           style={{ transition: "stroke-dashoffset 0.9s cubic-bezier(0.2,0.8,0.2,1)" }}

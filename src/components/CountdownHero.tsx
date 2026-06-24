@@ -96,6 +96,19 @@ export default function CountdownHero({
                   <span className="text-base">%</span>
                 </span>
                 <span className="text-[0.7rem] text-slate">职业生涯</span>
+                {/* 打卡状态标签（圆环内部） */}
+                <span
+                  className={cn(
+                    "num mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.6rem] font-medium transition-colors",
+                    checked
+                      ? "border-stamp/40 bg-stamp/5 text-stamp"
+                      : "border-stamp/50 text-stamp group-hover:bg-stamp group-hover:text-paper",
+                  )}
+                >
+                  {checked
+                    ? `✓ 连续 ${streak} 天`
+                    : "点击打卡"}
+                </span>
               </div>
             </ProgressRing>
           </button>
@@ -143,19 +156,6 @@ export default function CountdownHero({
               <span className="num ml-2 font-semibold text-ink">
                 {retirement.retirementDate}
               </span>
-            </span>
-            {/* 打卡状态标签（动画结束后显示在这里） */}
-            <span
-              className={cn(
-                "num mt-1 inline-flex w-fit items-center gap-1 rounded-full border px-2.5 py-0.5 text-[0.65rem] font-medium transition-colors",
-                checked
-                  ? "border-stamp/40 bg-stamp/5 text-stamp"
-                  : "border-stamp/50 text-stamp",
-              )}
-            >
-              {checked
-                ? `✓ 已打卡 · 连续 ${streak} 天`
-                : "点击圆环打卡"}
             </span>
           </div>
         </div>
