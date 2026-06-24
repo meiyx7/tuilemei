@@ -36,6 +36,13 @@ export default function CountdownHero({
   const { remaining } = pension;
   const retired = remaining.totalDays <= 0;
 
+  /** 今日日期标签 */
+  const todayLabel = (() => {
+    const d = new Date();
+    const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+    return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} 周${weekdays[d.getDay()]}`;
+  })();
+
   const checked = useStore((s) => s.isCheckedInToday());
   const checkinToday = useStore((s) => s.checkinToday);
   const streak = useStore((s) => s.streak());
@@ -156,7 +163,9 @@ export default function CountdownHero({
 
         {/* 倒计时数字 */}
         <div className="flex w-full flex-1 flex-col gap-4">
-          <span className="label-eyebrow">
+          <span className="label-eyebrow flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="num text-[0.7rem] text-slate-soft">{todayLabel}</span>
+            <span className="text-slate-soft/50">·</span>
             {retired ? "已到法定退休年龄" : "距离退休还有"}
           </span>
           {retired ? (
