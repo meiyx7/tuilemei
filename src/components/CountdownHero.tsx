@@ -14,6 +14,10 @@ interface CountdownHeroProps {
 
 interface FlyStamp {
   id: number;
+  /** 落点（鼠标点击位置）相对屏幕中心的偏移 */
+  toX: number;
+  toY: number;
+  /** 来源位置相对落点的偏移（飞行动画的起点） */
   fromX: number;
   fromY: number;
   rotate: number;
@@ -39,40 +43,42 @@ export default function CountdownHero({
   const idRef = useRef(0);
   const ringRef = useRef<HTMLDivElement>(null);
 
-  const handleCheckin = useCallback(() => {
+  const handleCheckin = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     // 首次点击正式打卡
     if (!checked) checkinToday();
 
-    // 生成一个从屏幕随机位置飞向圆环的"-1"印章
-    const ring = ringRef.current?.getBoundingClientRect();
-    if (!ring) return;
-    const cx = ring.left + ring.width / 2;
-    const cy = ring.top + ring.height / 2;
+    // 落点：鼠标点击位置（相对屏幕中心）
+    const clickX = e.clientX - window.innerWidth / 2;
+    const clickY = e.clientY - window.innerHeight / 2;
 
-    // 随机起点：屏幕四周边缘的随机位置
+    // 随机起点：屏幕四周边缘的随机位置（相对屏幕中心）
     const edge = Math.floor(Math.random() * 4);
     const margin = 40;
-    let fromX: number, fromY: number;
+    let edgeX: number, edgeY: number;
     if (edge === 0) { // 上边
-      fromX = Math.random() * window.innerWidth;
-      fromY = margin;
+      edgeX = Math.random() * window.innerWidth - window.innerWidth / 2;
+      edgeY = margin - window.innerHeight / 2;
     } else if (edge === 1) { // 右边
-      fromX = window.innerWidth - margin;
-      fromY = Math.random() * window.innerHeight;
+      edgeX = window.innerWidth - margin - window.innerWidth / 2;
+      edgeY = Math.random() * window.innerHeight - window.innerHeight / 2;
     } else if (edge === 2) { // 下边
-      fromX = Math.random() * window.innerWidth;
-      fromY = window.innerHeight - margin;
+      edgeX = Math.random() * window.innerWidth - window.innerWidth / 2;
+      edgeY = window.innerHeight - margin - window.innerHeight / 2;
     } else { // 左边
-      fromX = margin;
-      fromY = Math.random() * window.innerHeight;
+      edgeX = margin - window.innerWidth / 2;
+      edgeY = Math.random() * window.innerHeight - window.innerHeight / 2;
     }
 
-    const dx = cx - fromX;
-    const dy = cy - fromY;
+    // 来源相对落点的偏移
+    const fromX = edgeX - clickX;
+    const fromY = edgeY - clickY;
+
     const stamp: FlyStamp = {
       id: idRef.current++,
-      fromX: dx,
-      fromY: dy,
+      toX: clickX,
+      toY: clickY,
+      fromX,
+      fromY,
       rotate: -8 + Math.random() * 16,
     };
     setFlyStamps((prev) => [...prev, stamp]);
@@ -182,16 +188,16 @@ export default function CountdownHero({
         </div>
       </div>
 
-      {/* 飞行"-1"印章层：fixed 定位覆盖全屏，从随机位置飞向圆环 */}
+      {/* 飞行"-1"印章层：fixed 定位，落点为鼠标点击位置，从屏幕随机边缘飞来 */}
       {flyStamps.map((s) => (
         <div
           key={s.id}
           className="animate-stampFly pointer-events-none fixed left-1/2 top-1/2 z-50"
           style={
             {
-              "--fly-from": `translate(${s.fromX}px, ${s.fromY}px)`,
-              "--fly-to": "translate(0, 0)",
-              transform: `translate(${s.fromX}px, ${s.fromY}px)`,
+              "--fly-from": `translate(calc(${s.fromX}px - 50%), calc(${s.fromY}px - 50%))`,
+              "--fly-to": `translate(calc(${s.toX}px - 50%), calc(${s.toY}px - 50%))`,
+              transform: `translate(calc(${s.toX}px - 50%), calc(${s.toY}px - 50%))`,
             } as React.CSSProperties
           }
         >
