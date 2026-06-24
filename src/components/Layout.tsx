@@ -1,14 +1,21 @@
 import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Loader2, Settings, Share2 } from "lucide-react";
+import { Loader2, RefreshCw, Settings, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProfileModal from "@/components/ProfileModal";
+import UpdateModal from "@/components/UpdateModal";
+import { checkForUpdate, APP_VERSION } from "@/lib/updater";
+import type { UpdateInfo } from "@/lib/updater";
 
 const NAV = [
   { to: "/", label: "仪表盘", en: "Dashboard" },
   { to: "/calc", label: "退休账本", en: "Ledger" },
   { to: "/history", label: "打卡历史", en: "Almanac" },
 ];
+
+/** 自动检查更新的间隔（毫秒）：24 小时 */
+const CHECK_INTERVAL = 24 * 60 * 60 * 1000;
+const LAST_CHECK_KEY = "tuilemei:last-update-check";
 
 function todayLabel(): string {
   const d = new Date();
@@ -21,6 +28,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [updateOpen, setUpdateOpen] = useState(false);
+  const [checking, setChecking] = useState(false);
   const isHome = pathname === "/";
 
   // 监听其他页面派发的"打开档案弹框"事件
@@ -40,8 +50,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("share-state", onState as EventListener);
   }, []);
 
+  // 启动时自动检查更新（24 小时内已检查过则跳过）
+  useEffect(() => {
+    const last = Number(localStorage.getItem(LAST_CHECK_KEY) ?? 0);
+    if (Date.now() - last < CHECK_INTERVAL) return;
+    checkForUpdate().then((info) => {
+      localStorage.setItem(LAST_CHECK_KEY, String(Date.now()));
+      if (info.hasUpdate) {
+        setUpdateInfo(info);
+        setUpdateOpen(true);
+      }
+    });
+  }, []);
+
   const handleShare = () => {
     window.dispatchEvent(new CustomEvent("trigger-share"));
+  };
+
+  // 手动检查更新
+  const handleCheckUpdate = async () => {
+    setChecking(true);
+    try {
+      const info = await checkForUpdate();
+      localStorage.setItem(LAST_CHECK_KEY, String(Date.now()));
+      setUpdateInfo(info);
+      setUpdateOpen(true);
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -57,7 +93,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </span>
             <span className="num text-[0.7rem] text-slate-soft">{todayLabel()}</span>
           </div>
-          <nav className="flex flex-wrap items-center gap-1">
+          <nav className="flex flex-nowrap items-center justify-end gap-1 overflow-hidden">
             {NAV.map((item) => {
               const active = pathname === item.to;
               return (
@@ -65,27 +101,38 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "relative rounded-[3px] px-3 py-1.5 font-body text-sm transition-colors",
+                    "relative shrink-0 rounded-[3px] px-3 py-1.5 font-body text-sm transition-colors",
                     active
                       ? "text-ink"
                       : "text-slate hover:text-ink",
                   )}
                 >
-                  <span className="relative z-10">{item.label}</span>
+                  <span className="relative z-10 whitespace-nowrap">{item.label}</span>
                   {active && (
                     <span className="absolute inset-x-2 -bottom-px h-[2px] bg-stamp" />
                   )}
                 </NavLink>
               );
             })}
-            {/* 分享按钮：仅首页显示，置于设置按钮前方 */}
+            {/* 个人档案：设置按钮入口，点击打开弹框 */}
+            <button
+              onClick={() => setProfileOpen(true)}
+              aria-label="个人档案设置"
+              className={cn(
+                "ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-[3px] border transition-colors",
+                "border-card-edge text-slate hover:border-ink hover:text-ink",
+              )}
+            >
+              <Settings size={15} />
+            </button>
+            {/* 分享按钮：仅首页显示，置于设置按钮后方，靠页面右侧 */}
             {isHome && (
               <button
                 onClick={handleShare}
                 disabled={sharing}
                 aria-label="分享退休进度"
                 className={cn(
-                  "ml-1 grid h-8 w-8 place-items-center rounded-[3px] border transition-colors",
+                  "grid h-8 w-8 shrink-0 place-items-center rounded-[3px] border transition-colors",
                   "border-card-edge text-slate hover:border-ink hover:text-ink disabled:opacity-50",
                 )}
               >
@@ -96,17 +143,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 )}
               </button>
             )}
-            {/* 个人档案：设置按钮入口，点击打开弹框 */}
-            <button
-              onClick={() => setProfileOpen(true)}
-              aria-label="个人档案设置"
-              className={cn(
-                "grid h-8 w-8 place-items-center rounded-[3px] border transition-colors",
-                "border-card-edge text-slate hover:border-ink hover:text-ink",
-              )}
-            >
-              <Settings size={15} />
-            </button>
           </nav>
         </div>
       </header>
@@ -121,10 +157,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <span className="text-stamp">结果仅供参考，不构成任何官方承诺或法律依据。</span>
           实际退休年龄与待遇以参保地社保经办机构核定为准。
         </p>
+        <div className="mt-3 flex items-center gap-3">
+          <span className="num text-[0.7rem] text-slate-soft">v{APP_VERSION}</span>
+          <button
+            onClick={handleCheckUpdate}
+            disabled={checking}
+            className="inline-flex items-center gap-1 text-[0.7rem] text-slate transition-colors hover:text-ink disabled:opacity-50"
+          >
+            <RefreshCw size={11} className={checking ? "animate-spin" : ""} />
+            {checking ? "检查中…" : "检查更新"}
+          </button>
+        </div>
       </footer>
 
       {/* 个人档案设置弹框 */}
       <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+      {/* 应用更新提示弹框 */}
+      <UpdateModal
+        open={updateOpen}
+        onClose={() => setUpdateOpen(false)}
+        info={updateInfo}
+      />
     </div>
   );
 }

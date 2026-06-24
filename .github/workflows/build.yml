@@ -69,6 +69,10 @@ jobs:
           java-version: 21
       - run: npx cap add android
       - run: npx cap sync android
+      - name: 注入 APK 安装权限
+        working-directory: android
+        run: |
+          sed -i 's/<\/manifest>/<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" \/>\n<\/manifest>/' app/src/main/AndroidManifest.xml
       - working-directory: android
         run: ./gradlew assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
@@ -84,6 +88,8 @@ jobs:
     name: Android Release AAB（签名）
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -101,6 +107,10 @@ jobs:
           java-version: 21
       - run: npx cap add android
       - run: npx cap sync android
+      - name: 注入 APK 安装权限
+        working-directory: android
+        run: |
+          sed -i 's/<\/manifest>/<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" \/>\n<\/manifest>/' app/src/main/AndroidManifest.xml
 
       - name: 写入签名 keystore
         working-directory: android
@@ -156,13 +166,23 @@ jobs:
           PY
 
       - working-directory: android
-        run: ./gradlew bundleRelease --no-daemon
+        run: ./gradlew bundleRelease assembleRelease --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
           name: tuilemei-android-release-aab
           path: android/app/build/outputs/bundle/release/*.aab
           retention-days: 90
+
+      # 将签名 APK 上传到 GitHub Release，供应用内检测更新下载
+      - name: 上传 APK 到 Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android/app/build/outputs/apk/release/*.apk
+          generate_release_notes: true
+          draft: false
+          prerelease: false
 
   # ----------------------------------------------------------------
   # Job 4: iOS 构建验证（模拟器，每次推送）

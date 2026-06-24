@@ -158,7 +158,7 @@ export default function CountdownHero({
               到点了
             </div>
           ) : (
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <div className="flex flex-nowrap items-baseline gap-x-4 gap-y-1">
               <CountPart n={remaining.years} unit="年" big />
               <CountPart n={remaining.months} unit="月" />
               <span className="num whitespace-nowrap text-sm text-slate">
