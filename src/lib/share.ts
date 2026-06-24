@@ -14,9 +14,9 @@ interface ShareOptions {
  * - 原生 App（Capacitor）：写入缓存目录后调用原生分享面板（支持图片分享）。
  * - 浏览器：优先 Web Share API（带缩略图），不支持时回退为下载图片。
  *
- * 实现要点：克隆目标元素到屏幕外的包裹容器中截图。
- * 包裹容器提供 padding/边框/背景，克隆元素保持原始宽度与布局，
- * 确保截图内容与页面完全一致，不被裁剪或偏移。
+ * 实现要点：直接在原元素上截图（保证布局与页面完全一致），
+ * 截图期间用全屏遮罩盖住页面，用户看不到样式变化。
+ * 宽度补偿 padding 避免内容收缩，高度自适应避免裁剪。
  */
 export async function shareElement(
   el: HTMLElement,
@@ -27,36 +27,47 @@ export async function shareElement(
     filename = "退了没-退休进度.png",
   } = opts;
 
-  // 1. 创建屏幕外的包裹容器，提供 padding/边框/背景
-  const wrapper = document.createElement("div");
-  wrapper.style.cssText = [
+  // 1. 全屏遮罩：盖住页面，让用户看不到截图期间的样式变化
+  const overlay = document.createElement("div");
+  overlay.style.cssText = [
     "position: fixed",
-    "left: -99999px",
-    "top: 0",
-    "z-index: -1",
-    "pointer-events: none",
-    `padding: ${padding}px`,
-    "border: 1px solid rgba(28,26,23,0.15)",
-    "border-radius: 8px",
-    "background-color: #f5f1e8",
-    "box-sizing: border-box",
-    "display: inline-block",
+    "inset: 0",
+    "z-index: 9999",
+    "background-color: rgba(244,239,227,0.85)",
+    "backdrop-filter: blur(2px)",
+    "display: flex",
+    "align-items: center",
+    "justify-content: center",
   ].join(";");
+  const hint = document.createElement("div");
+  hint.textContent = "正在生成分享图片…";
+  hint.style.cssText = "font-size:14px;color:#6b6358;";
+  overlay.appendChild(hint);
+  document.body.appendChild(overlay);
 
-  // 2. 克隆目标元素，保持原始宽度与布局
-  const clone = el.cloneNode(true) as HTMLElement;
-  // 克隆体宽度固定为原元素渲染宽度，确保内部布局与页面一致
+  // 2. 保存原样式，临时加 padding/边框，宽度补偿避免内容收缩
+  const prev = {
+    padding: el.style.padding,
+    border: el.style.border,
+    borderRadius: el.style.borderRadius,
+    width: el.style.width,
+    boxSizing: el.style.boxSizing,
+    margin: el.style.margin,
+  };
   const renderWidth = el.getBoundingClientRect().width;
-  clone.style.width = `${renderWidth}px`;
-  clone.style.margin = "0";
-  wrapper.appendChild(clone);
-  document.body.appendChild(wrapper);
+  el.style.boxSizing = "border-box";
+  el.style.width = `${renderWidth + padding * 2 + 2}px`;
+  el.style.padding = `${padding}px`;
+  el.style.border = "1px solid rgba(28,26,23,0.15)";
+  el.style.borderRadius = "8px";
+  el.style.margin = "0";
+
+  // 等待两帧确保样式与布局完全生效
+  await new Promise((r) => requestAnimationFrame(() => r(null)));
+  await new Promise((r) => requestAnimationFrame(() => r(null)));
 
   try {
-    // 等待一帧让克隆体渲染生效
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-
-    const dataUrl = await toPng(wrapper, {
+    const dataUrl = await toPng(el, {
       quality: 0.95,
       pixelRatio: 2,
       backgroundColor: "#f5f1e8",
@@ -66,7 +77,6 @@ export async function shareElement(
 
     const res = await fetch(dataUrl);
     const blob = await res.blob();
-    // 确保 blob 非空
     if (blob.size === 0) throw new Error("截图为空");
 
     // 原生 App：写入缓存目录后用原生分享面板分享图片文件
@@ -87,12 +97,9 @@ export async function shareElement(
         });
         return;
       } catch (err: unknown) {
-        // 用户取消分享则直接返回
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes("cancel") || msg.includes("Abort")) return;
-        // 其他错误回退到下载
       } finally {
-        // 分享完成后清理缓存文件
         Filesystem.deleteFile({
           path: filename,
           directory: Directory.Cache,
@@ -100,7 +107,7 @@ export async function shareElement(
       }
     }
 
-    // 浏览器：优先原生分享（需 https 或 localhost，且支持文件分享）
+    // 浏览器：优先原生分享
     const file = new File([blob], filename, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
       try {
@@ -111,9 +118,7 @@ export async function shareElement(
         });
         return;
       } catch (err) {
-        // 用户取消分享（AbortError）则直接返回，不触发下载
         if (err instanceof DOMException && err.name === "AbortError") return;
-        // 其他错误回退下载
       }
     }
 
@@ -123,7 +128,13 @@ export async function shareElement(
     a.download = filename;
     a.click();
   } finally {
-    // 3. 移除包裹容器
-    wrapper.remove();
+    // 3. 恢复原样式并移除遮罩
+    el.style.padding = prev.padding;
+    el.style.border = prev.border;
+    el.style.borderRadius = prev.borderRadius;
+    el.style.width = prev.width;
+    el.style.boxSizing = prev.boxSizing;
+    el.style.margin = prev.margin;
+    overlay.remove();
   }
 }

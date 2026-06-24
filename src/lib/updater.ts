@@ -8,6 +8,8 @@ const API_BASE = `https://api.github.com/repos/${GITHUB_REPO}`;
 
 /** 当前应用版本（由 Vite define 注入，取自 package.json） */
 export const APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0";
+/** 构建时间戳（由 Vite define 注入），用于区分缓存版本 */
+export const BUILD_TIME = typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "";
 
 export interface UpdateInfo {
   /** 是否有新版本 */

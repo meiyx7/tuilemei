@@ -4,7 +4,7 @@ import { Loader2, RefreshCw, Settings, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProfileModal from "@/components/ProfileModal";
 import UpdateModal from "@/components/UpdateModal";
-import { checkForUpdate, APP_VERSION } from "@/lib/updater";
+import { checkForUpdate, APP_VERSION, BUILD_TIME } from "@/lib/updater";
 import type { UpdateInfo } from "@/lib/updater";
 
 const NAV = [
@@ -162,8 +162,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <span className="text-stamp">结果仅供参考，不构成任何官方承诺或法律依据。</span>
           实际退休年龄与待遇以参保地社保经办机构核定为准。
         </p>
-        <div className="mt-3 flex items-center gap-3">
-          <span className="num text-[0.7rem] text-slate-soft">v{APP_VERSION}</span>
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="num text-[0.7rem] text-slate-soft">
+            v{APP_VERSION}
+            {BUILD_TIME && (
+              <span className="ml-1 text-slate-soft/60">
+                · {new Date(BUILD_TIME).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </span>
           <button
             onClick={handleCheckUpdate}
             disabled={checking}
