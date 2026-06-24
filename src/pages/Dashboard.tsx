@@ -35,28 +35,27 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-10">
-      {/* 头条：倒计时主视觉 + 打卡 */}
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr]">
+      {/* 头条：倒计时主视觉（占满宽度，打卡改为右下角悬浮按钮） */}
+      <section className="flex flex-col gap-4">
         <CountdownHero
           retirement={retirement}
           pension={pension}
           careerProgress={careerProgress}
         />
-        <div className="card-paper flex flex-col items-center justify-center gap-6 p-6 md:p-8">
-          <SectionHeader eyebrow="每日仪式" title="今日打卡" align="center" />
-          <CheckinButton />
-          {!onboarded && (
-            <Link
-              to="/profile"
-              className="flex items-center gap-1.5 text-xs text-slate transition-colors hover:text-ink"
-            >
-              <Settings size={12} />
-              填写你的真实档案，重算倒计时
-              <ArrowRight size={12} />
-            </Link>
-          )}
-        </div>
+        {!onboarded && (
+          <Link
+            to="/profile"
+            className="flex items-center gap-1.5 self-start text-xs text-slate transition-colors hover:text-ink"
+          >
+            <Settings size={12} />
+            填写你的真实档案，重算倒计时
+            <ArrowRight size={12} />
+          </Link>
+        )}
       </section>
+
+      {/* 悬浮打卡按钮（固定在页面右下角） */}
+      <CheckinButton />
 
       {/* 关键指标 */}
       <section className="flex flex-col gap-5">

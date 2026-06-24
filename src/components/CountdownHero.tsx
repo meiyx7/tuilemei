@@ -21,9 +21,9 @@ export default function CountdownHero({
 
   return (
     <div className="card-paper relative overflow-hidden p-6 md:p-8">
-      {/* 装饰：右上角邮戳 */}
-      <div className="pointer-events-none absolute -right-6 -top-6 rotate-[-11deg] opacity-20">
-        <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+      {/* 装饰：右上角邮戳（缩小、淡化、移至更靠角的位置，避免喧宾夺主） */}
+      <div className="pointer-events-none absolute -right-8 -top-8 rotate-[-11deg] opacity-[0.12]">
+        <svg width="76" height="76" viewBox="0 0 120 120" fill="none">
           <circle cx="60" cy="60" r="54" stroke="#B23A2E" strokeWidth="2" />
           <circle cx="60" cy="60" r="46" stroke="#B23A2E" strokeWidth="1" />
           <text
@@ -50,21 +50,21 @@ export default function CountdownHero({
         </svg>
       </div>
 
-      <div className="flex flex-col gap-8 md:flex-row md:items-center">
-        {/* 环形进度 */}
-        <ProgressRing value={careerProgress} size={188} stroke={9}>
+      <div className="flex flex-col items-center gap-8 md:flex-row md:items-center md:gap-10">
+        {/* 环形进度（加大并居中，作为主视觉） */}
+        <ProgressRing value={careerProgress} size={220} stroke={11} className="shrink-0">
           <div className="flex flex-col items-center">
             <span className="label-eyebrow">已过</span>
-            <span className="num text-2xl font-semibold text-ink">
+            <span className="num text-3xl font-semibold text-ink">
               {(careerProgress * 100).toFixed(0)}
-              <span className="text-sm">%</span>
+              <span className="text-base">%</span>
             </span>
             <span className="text-[0.7rem] text-slate">职业生涯</span>
           </div>
         </ProgressRing>
 
         {/* 倒计时数字 */}
-        <div className="flex flex-1 flex-col gap-4">
+        <div className="flex w-full flex-1 flex-col gap-4">
           <span className="label-eyebrow">
             {retired ? "已到法定退休年龄" : "距离退休还有"}
           </span>
