@@ -9,7 +9,7 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-// 注册 Service Worker：PWA 自动检测更新
+// 注册 Service Worker：PWA 自动检测更新，确保始终加载最新版本
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").then((reg) => {
@@ -25,6 +25,19 @@ if ("serviceWorker" in navigator) {
           }
         });
       });
+
+      // 页面加载时检查是否有等待中的新 SW，有则立即激活并刷新
+      if (reg.waiting) {
+        reg.waiting.postMessage("SKIP_WAITING");
+      }
     }).catch((err) => console.warn("SW 注册失败:", err));
+
+    // 监听控制器变化（新 SW 接管），自动刷新页面
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
   });
 }

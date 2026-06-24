@@ -1,12 +1,12 @@
 /**
  * Service Worker：网络优先策略，确保 PWA 始终加载最新版本。
- * - 导航请求（HTML）：优先网络，失败回退缓存
+ * - 导航请求（HTML）：始终走网络，确保拿到最新版本
  * - 静态资源（JS/CSS/图片）：缓存优先（带 hash 文件名，天然版本控制）
- * - 检测到新版本时通知页面刷新
+ * - 激活时清理所有旧缓存
  */
 
-const CACHE_NAME = "tuilemei-v1";
-const SW_VERSION = "1";
+// 每次部署更新此版本号，强制清理旧缓存
+const CACHE_NAME = "tuilemei-v2";
 
 // 安装：跳过等待，立即激活
 self.addEventListener("install", (event) => {
@@ -14,11 +14,12 @@ self.addEventListener("install", (event) => {
   event.waitUntil(Promise.resolve());
 });
 
-// 激活：清理旧缓存，立即接管
+// 激活：清理所有非当前版本的缓存，立即接管页面
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
+        // 清理所有缓存（包括旧 HTML），确保不会用到过期资源
         keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)),
       ),
     ).then(() => self.clients.claim()),
@@ -34,7 +35,7 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
-  // 导航请求（HTML 页面）：网络优先，确保拿到最新版本
+  // 导航请求（HTML 页面）：始终走网络，确保拿到最新版本
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -44,7 +45,10 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => caches.match(request).then((r) => r || caches.match("./"))),
+        .catch(() =>
+          // 离线时回退到缓存的 HTML
+          caches.match(request).then((r) => r || caches.match("./") || caches.match("/")),
+        ),
     );
     return;
   }
