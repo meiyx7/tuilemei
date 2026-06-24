@@ -14,9 +14,9 @@ interface ShareOptions {
  * - 原生 App（Capacitor）：写入缓存目录后调用原生分享面板（支持图片分享）。
  * - 浏览器：优先 Web Share API（带缩略图），不支持时回退为下载图片。
  *
- * 实现要点：直接在原元素上截图（保证布局与页面完全一致），
- * 截图期间用全屏遮罩盖住页面，用户看不到样式变化。
- * 宽度补偿 padding 避免内容收缩，高度自适应避免裁剪。
+ * 实现要点：截图时将元素临时 position:fixed 脱离文档流并移到屏幕左上角，
+ * 加 padding/边框后截图。由于脱离文档流，元素宽度变化不会影响页面布局，
+ * 配合全屏遮罩让用户看到"正在生成"提示而非样式变化。
  */
 export async function shareElement(
   el: HTMLElement,
@@ -27,7 +27,7 @@ export async function shareElement(
     filename = "退了没-退休进度.png",
   } = opts;
 
-  // 1. 全屏遮罩：盖住页面，让用户看不到截图期间的样式变化
+  // 1. 全屏遮罩：盖住页面，显示"正在生成"提示
   const overlay = document.createElement("div");
   overlay.style.cssText = [
     "position: fixed",
@@ -45,8 +45,12 @@ export async function shareElement(
   overlay.appendChild(hint);
   document.body.appendChild(overlay);
 
-  // 2. 保存原样式，临时加 padding/边框，宽度补偿避免内容收缩
+  // 2. 保存原样式，临时脱离文档流 + 加 padding/边框
   const prev = {
+    position: el.style.position,
+    left: el.style.left,
+    top: el.style.top,
+    zIndex: el.style.zIndex,
     padding: el.style.padding,
     border: el.style.border,
     borderRadius: el.style.borderRadius,
@@ -55,6 +59,11 @@ export async function shareElement(
     margin: el.style.margin,
   };
   const renderWidth = el.getBoundingClientRect().width;
+  // 脱离文档流，移到屏幕左上角（被遮罩盖住），宽度变化不影响页面布局
+  el.style.position = "fixed";
+  el.style.left = "0";
+  el.style.top = "0";
+  el.style.zIndex = "10000";
   el.style.boxSizing = "border-box";
   el.style.width = `${renderWidth + padding * 2 + 2}px`;
   el.style.padding = `${padding}px`;
@@ -129,6 +138,10 @@ export async function shareElement(
     a.click();
   } finally {
     // 3. 恢复原样式并移除遮罩
+    el.style.position = prev.position;
+    el.style.left = prev.left;
+    el.style.top = prev.top;
+    el.style.zIndex = prev.zIndex;
     el.style.padding = prev.padding;
     el.style.border = prev.border;
     el.style.borderRadius = prev.borderRadius;

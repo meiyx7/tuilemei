@@ -57,7 +57,7 @@ export default function Dashboard() {
         <section className="flex flex-col gap-4">
           <SectionHeader
             eyebrow="退休进度 · Countdown"
-            title="您退了没"
+            title="今天您退了没"
           />
           <CountdownHero
             retirement={retirement}
