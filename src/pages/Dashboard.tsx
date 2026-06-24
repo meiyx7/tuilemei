@@ -21,6 +21,13 @@ export default function Dashboard() {
 
   const shareRef = useRef<HTMLDivElement>(null);
 
+  /** 今日日期标签（用于主内容区展示 + 分享截图） */
+  const todayLabel = (() => {
+    const d = new Date();
+    const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+    return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 星期${weekdays[d.getDay()]}`;
+  })();
+
   // 职业生涯进度：已工作月数 / 总工作月数（入职到退休）
   const workStartMonths = parseYearMonth(profile.workStartDate).year * 12 +
     parseYearMonth(profile.workStartDate).month - 1;
@@ -51,14 +58,17 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-12">
-      {/* 可分享区域：倒计时主视觉 + 进度轴（一体化，无卡片割裂） */}
+      {/* 可分享区域：日期 + 倒计时主视觉 + 进度轴（一体化，无卡片割裂） */}
       <div ref={shareRef} className="flex flex-col gap-10">
         {/* 头条：倒计时主视觉（圆环即打卡入口） */}
         <section className="flex flex-col gap-4">
-          <SectionHeader
-            eyebrow="退休进度 · Countdown"
-            title="今天您退了没"
-          />
+          <div className="flex flex-col gap-2">
+            <span className="num text-[0.7rem] text-slate-soft">{todayLabel}</span>
+            <SectionHeader
+              eyebrow="退休进度 · Countdown"
+              title="今天您退了没"
+            />
+          </div>
           <CountdownHero
             retirement={retirement}
             pension={pension}

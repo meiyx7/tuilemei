@@ -17,12 +17,6 @@ const NAV = [
 const CHECK_INTERVAL = 24 * 60 * 60 * 1000;
 const LAST_CHECK_KEY = "tuilemei:last-update-check";
 
-function todayLabel(): string {
-  const d = new Date();
-  const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
-  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 星期${weekdays[d.getDay()]}`;
-}
-
 /** 顶部刊头 + 导航 + 档案设置弹框 */
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
@@ -86,13 +80,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className="sticky top-0 z-30 border-b border-card-edge/70 bg-paper/85 backdrop-blur-md"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="container flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-baseline gap-3">
-            <span className="hidden text-xs text-slate sm:inline">
-              · 退休进度年鉴 ·
-            </span>
-            <span className="num text-[0.7rem] text-slate-soft">{todayLabel()}</span>
-          </div>
+        <div className="container flex items-center justify-between py-4">
           <nav className="flex flex-nowrap items-center justify-between gap-2 overflow-hidden">
             {/* 左侧：tab 页导航 */}
             <div className="flex flex-nowrap items-center gap-1">
