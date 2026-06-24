@@ -93,47 +93,52 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </span>
             <span className="num text-[0.7rem] text-slate-soft">{todayLabel()}</span>
           </div>
-          <nav className="flex flex-nowrap items-center justify-end gap-1 overflow-hidden">
-            {NAV.map((item) => {
-              const active = pathname === item.to;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={cn(
-                    "relative shrink-0 rounded-[3px] px-3 py-1.5 font-body text-sm transition-colors",
-                    active
-                      ? "text-ink"
-                      : "text-slate hover:text-ink",
-                  )}
-                >
-                  <span className="relative z-10 whitespace-nowrap">{item.label}</span>
-                  {active && (
-                    <span className="absolute inset-x-2 -bottom-px h-[2px] bg-stamp" />
-                  )}
-                </NavLink>
-              );
-            })}
-            {/* 个人档案：设置按钮入口，点击打开弹框 */}
-            <button
-              onClick={() => setProfileOpen(true)}
-              aria-label="个人档案设置"
-              className={cn(
-                "ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-[3px] border transition-colors",
-                "border-card-edge text-slate hover:border-ink hover:text-ink",
-              )}
-            >
-              <Settings size={15} />
-            </button>
-            {/* 分享按钮：仅首页显示，置于设置按钮后方，靠页面右侧 */}
-            {isHome && (
+          <nav className="flex flex-nowrap items-center justify-between gap-2 overflow-hidden">
+            {/* 左侧：tab 页导航 */}
+            <div className="flex flex-nowrap items-center gap-1">
+              {NAV.map((item) => {
+                const active = pathname === item.to;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={cn(
+                      "relative shrink-0 rounded-[3px] px-3 py-1.5 font-body text-sm transition-colors",
+                      active
+                        ? "text-ink"
+                        : "text-slate hover:text-ink",
+                    )}
+                  >
+                    <span className="relative z-10 whitespace-nowrap">{item.label}</span>
+                    {active && (
+                      <span className="absolute inset-x-2 -bottom-px h-[2px] bg-stamp" />
+                    )}
+                  </NavLink>
+                );
+              })}
+            </div>
+            {/* 右侧：设置 + 分享按钮组，位置固定，分享按钮隐藏时用 invisible 占位避免设置按钮位移 */}
+            <div className="flex flex-nowrap items-center gap-1">
+              <button
+                onClick={() => setProfileOpen(true)}
+                aria-label="个人档案设置"
+                className={cn(
+                  "grid h-8 w-8 shrink-0 place-items-center rounded-[3px] border transition-colors",
+                  "border-card-edge text-slate hover:border-ink hover:text-ink",
+                )}
+              >
+                <Settings size={15} />
+              </button>
+              {/* 分享按钮：仅首页显示，非首页用 invisible 占位保持设置按钮位置不变 */}
               <button
                 onClick={handleShare}
-                disabled={sharing}
+                disabled={sharing || !isHome}
                 aria-label="分享退休进度"
+                tabIndex={isHome ? 0 : -1}
                 className={cn(
                   "grid h-8 w-8 shrink-0 place-items-center rounded-[3px] border transition-colors",
                   "border-card-edge text-slate hover:border-ink hover:text-ink disabled:opacity-50",
+                  !isHome && "invisible pointer-events-none",
                 )}
               >
                 {sharing ? (
@@ -142,7 +147,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <Share2 size={15} />
                 )}
               </button>
-            )}
+            </div>
           </nav>
         </div>
       </header>
