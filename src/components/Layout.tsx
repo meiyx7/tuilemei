@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Loader2, RefreshCw, Settings, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/store/useStore";
 import ProfileModal from "@/components/ProfileModal";
+import OnboardingModal from "@/components/OnboardingModal";
 import UpdateModal from "@/components/UpdateModal";
 import { checkForUpdate, APP_VERSION, BUILD_TIME } from "@/lib/updater";
 import type { UpdateInfo } from "@/lib/updater";
@@ -20,6 +22,7 @@ const LAST_CHECK_KEY = "tuilemei:last-update-check";
 /** 顶部刊头 + 导航 + 档案设置弹框 */
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
+  const onboarded = useStore((s) => s.onboarded);
   const [profileOpen, setProfileOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
@@ -172,6 +175,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* 个人档案设置弹框 */}
       <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+      {/* 首次使用引导：未完成 onboarding 时自动弹出 */}
+      <OnboardingModal open={!onboarded} onClose={() => {}} />
       {/* 应用更新提示弹框 */}
       <UpdateModal
         open={updateOpen}

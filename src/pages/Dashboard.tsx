@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Settings } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import {
   calcPension,
@@ -15,7 +15,6 @@ import Timeline from "@/components/Timeline";
 
 export default function Dashboard() {
   const profile = useStore((s) => s.profile);
-  const onboarded = useStore((s) => s.onboarded);
   const retirement = calcRetirementAge(profile);
   const pension = calcPension(profile);
 
@@ -64,16 +63,6 @@ export default function Dashboard() {
             pension={pension}
             careerProgress={careerProgress}
           />
-          {!onboarded && (
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent("open-profile-modal"))}
-              className="flex items-center gap-1.5 self-start text-xs text-slate transition-colors hover:text-ink"
-            >
-              <Settings size={12} />
-              填写你的真实档案，重算倒计时
-              <ArrowRight size={12} />
-            </button>
-          )}
         </section>
 
         {/* 进度轴 */}
