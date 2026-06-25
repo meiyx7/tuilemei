@@ -65,13 +65,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   // 手动检查更新
+  // 行为对齐自动检查：仅在有新版本时弹窗，无新版本时通过 hint 提示
+  const [checkHint, setCheckHint] = useState<string | null>(null);
   const handleCheckUpdate = async () => {
     setChecking(true);
+    setCheckHint(null);
     try {
       const info = await checkForUpdate();
       localStorage.setItem(LAST_CHECK_KEY, String(Date.now()));
       setUpdateInfo(info);
-      setUpdateOpen(true);
+      if (info.hasUpdate) {
+        setUpdateOpen(true);
+      } else {
+        // 短暂提示"已是最新版本"，2 秒后消失
+        setCheckHint("已是最新版本");
+        setTimeout(() => setCheckHint(null), 2000);
+      }
+    } catch {
+      setCheckHint("检查失败，请稍后重试");
+      setTimeout(() => setCheckHint(null), 2000);
     } finally {
       setChecking(false);
     }
@@ -170,6 +182,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <RefreshCw size={11} className={checking ? "animate-spin" : ""} />
             {checking ? "检查中…" : "检查更新"}
           </button>
+          {checkHint && (
+            <span className="text-[0.7rem] text-slate-soft">{checkHint}</span>
+          )}
         </div>
       </footer>
 

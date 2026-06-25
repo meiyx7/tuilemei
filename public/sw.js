@@ -3,10 +3,13 @@
  * - 导航请求（HTML）：始终走网络，确保拿到最新版本
  * - 静态资源（JS/CSS/图片）：缓存优先（带 hash 文件名，天然版本控制）
  * - 激活时清理所有旧缓存
+ *
+ * CACHE_NAME 由 vite.config.ts 在构建时注入 __SW_VERSION__ 占位符（取自 package.json 版本号），
+ * 每次发版自动变更，无需手动维护。
  */
 
-// 每次部署更新此版本号，强制清理旧缓存
-const CACHE_NAME = "tuilemei-v2";
+// 构建时由 vite-plugin-replace-swtmpl 替换为实际版本号
+const CACHE_NAME = `tuilemei-v__SW_VERSION__`;
 
 // 安装：跳过等待，立即激活
 self.addEventListener("install", (event) => {

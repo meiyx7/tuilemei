@@ -59,7 +59,7 @@
 | 路由 | React Router 7 (HashRouter) |
 | 跨端 | Capacitor 8 (Android / iOS / PWA) |
 | 包管理 | pnpm 10+ |
-| 字体 | Fraunces / Spectral / JetBrains Mono (Google Fonts) |
+| 字体 | Fraunces / Spectral / JetBrains Mono（已本地化，避免依赖 Google Fonts CDN） |
 
 ## 🚀 快速开始
 
@@ -168,8 +168,9 @@ tuilemei/
 欢迎通过 Issue 反馈 bug 或提出功能建议，也欢迎 PR。提交前请确保：
 
 1. `pnpm check` 通过
-2. `pnpm lint` 无新增 warning
-3. `pnpm build` 成功
+2. `pnpm test` 全部通过
+3. `pnpm lint` 无新增 warning
+4. `pnpm build` 成功
 
 ## 📄 License
 

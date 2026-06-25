@@ -61,7 +61,11 @@ function compareVersions(a: string, b: string): number {
 
 /**
  * 查询 GitHub Releases 最新版本，与当前版本对比。
- * 网络失败或无新版本时返回 hasUpdate=false。
+ * 网络失败、限流或无新版本时返回 hasUpdate=false。
+ *
+ * GitHub API 未认证请求限流：60 次/小时/IP。
+ * 应用本身不会发起高频请求（24h 检查一次 + 手动触发），
+ * 但若用户处于 NAT 后共 IP，可能撞限流。检测到 403 时静默降级。
  */
 export async function checkForUpdate(): Promise<UpdateInfo> {
   const currentVersion = APP_VERSION;
@@ -79,7 +83,17 @@ export async function checkForUpdate(): Promise<UpdateInfo> {
     const res = await fetch(`${API_BASE}/releases/latest`, {
       headers: { Accept: "application/vnd.github+json" },
     });
-    if (!res.ok) return fallback;
+    // 403 通常是 rate limit，404 表示无 release，二者都静默降级
+    if (!res.ok) {
+      if (res.status === 403) {
+        console.info("[updater] GitHub API rate limited, skip update check");
+      } else if (res.status === 404) {
+        console.info("[updater] No release found");
+      } else {
+        console.warn(`[updater] GitHub API responded ${res.status}`);
+      }
+      return fallback;
+    }
     const release: GitHubRelease = await res.json();
     if (release.draft || release.prerelease) return fallback;
 

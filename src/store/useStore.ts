@@ -132,7 +132,23 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: "tuilemei-store",
-      version: 1,
+      version: 2,
+      /**
+       * 持久化 schema 升级迁移：
+       * - v1 → v2：补全新增字段（如未来增加字段时旧用户数据不会缺失）
+       *   目前 v1 与 v2 结构相同，仅做深拷贝兜底
+       * - 后续每次破坏性变更 schema 时递增 version 并补 migrate 分支
+       */
+      migrate: (persistedState: unknown, fromVersion: number) => {
+        const state = (persistedState as Record<string, unknown>) ?? {};
+        if (fromVersion < 2) {
+          // v1 -> v2: 兜底处理，确保 profile 字段存在
+          if (!state.profile || typeof state.profile !== "object") {
+            state.profile = SAMPLE_PROFILE;
+          }
+        }
+        return state as unknown as StoreState;
+      },
     },
   ),
 );

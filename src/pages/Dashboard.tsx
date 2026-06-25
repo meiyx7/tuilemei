@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useStore } from "@/store/useStore";
@@ -21,12 +21,19 @@ export default function Dashboard() {
   const shareRef = useRef<HTMLDivElement>(null);
 
   // 职业生涯进度：已工作月数 / 总工作月数（入职到退休）
-  const workStartMonths = parseYearMonth(profile.workStartDate).year * 12 +
-    parseYearMonth(profile.workStartDate).month - 1;
-  const retireMonths = parseYearMonth(retirement.retirementDate).year * 12 +
-    parseYearMonth(retirement.retirementDate).month - 1;
-  const nowMonths = parseYearMonth(todayYm()).year * 12 +
-    parseYearMonth(todayYm()).month - 1;
+  // parseYearMonth 缓存：避免同一参数多次解析
+  const workStartMonths = useMemo(() => {
+    const { year, month } = parseYearMonth(profile.workStartDate);
+    return year * 12 + month - 1;
+  }, [profile.workStartDate]);
+  const retireMonths = useMemo(() => {
+    const { year, month } = parseYearMonth(retirement.retirementDate);
+    return year * 12 + month - 1;
+  }, [retirement.retirementDate]);
+  const nowMonths = useMemo(() => {
+    const { year, month } = parseYearMonth(todayYm());
+    return year * 12 + month - 1;
+  }, []);
   const careerProgress = Math.max(
     0,
     Math.min(1, (nowMonths - workStartMonths) / (retireMonths - workStartMonths || 1)),
