@@ -8,10 +8,11 @@ const config: CapacitorConfig = {
   backgroundColor: "#f4efe3",
   server: {
     androidScheme: "https",
+    // allowMixedContent 属于 server 节点（参见 Capacitor 官方文档）
+    allowMixedContent: false,
   },
   android: {
     // 允许 webview 使用 localStorage（默认即支持，显式声明）
-    allowMixedContent: false,
   },
   ios: {
     contentInset: "always",

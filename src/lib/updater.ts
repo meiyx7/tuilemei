@@ -1,5 +1,4 @@
 import { Capacitor } from "@capacitor/core";
-import { Filesystem, Directory } from "@capacitor/filesystem";
 
 /** GitHub 仓库（owner/repo），用于查询 Releases */
 const GITHUB_REPO = "meiyx7/tuilemei";
@@ -108,52 +107,31 @@ export async function checkForUpdate(): Promise<UpdateInfo> {
 }
 
 /**
- * 下载并安装更新。
- * - Android 原生：下载 APK 到缓存目录后打开触发安装；失败则回退到浏览器打开下载页。
- * - iOS / Web：在系统浏览器中打开 Release 页面。
+ * 触发更新下载。
+ *
+ * 历史方案（已废弃）：fetch blob → base64 → Filesystem.writeFile → window.open(file://)
+ *  问题和失败原因：
+ *   1. APK 通常 10MB+，base64 编码后占内存 ~13MB+，低端 Android 直接 OOM；
+ *   2. Android 7+ 打开 file:// URI 抛 FileUriExposedException，需配置 FileProvider，
+ *      但 Capacitor 默认未配置 APK 共享的 FileProvider；
+ *   3. 缺少 REQUEST_INSTALL_PACKAGES 权限无法触发系统安装器（CI 已注入，但本地构建不一定）。
+ *
+ * 当前方案：所有平台都用系统浏览器打开下载链接，由浏览器负责下载、由系统负责安装。
+ *  - Android：window.open(url, "_system") 由 Capacitor 拦截转给系统浏览器，
+ *    下载完成后用户点击通知栏即可触发安装。
+ *  - iOS：iOS 不支持 APK，info.apkUrl 通常为 null，会回退到 Release 页面。
+ *  - Web：在新标签页打开下载链接。
  */
 export async function downloadAndInstallUpdate(info: UpdateInfo): Promise<void> {
-  const platform = Capacitor.getPlatform();
-
-  // Android：尝试应用内下载 APK 并打开安装
-  if (platform === "android" && info.apkUrl) {
-    try {
-      const res = await fetch(info.apkUrl);
-      if (!res.ok) throw new Error("下载失败");
-      const blob = await res.blob();
-      // Blob → base64
-      const base64 = await blobToBase64(blob);
-      const filename = `tuilemei-${info.latestVersion}.apk`;
-      const fileResult = await Filesystem.writeFile({
-        path: filename,
-        data: base64,
-        directory: Directory.External,
-        recursive: true,
-      });
-      // 打开 APK 触发系统安装界面
-      window.open(fileResult.uri, "_system");
-      return;
-    } catch {
-      // 回退：浏览器打开下载链接
-      window.open(info.apkUrl, "_system");
-      return;
-    }
-  }
-
-  // iOS / Web：打开 Release 页面
   const url = info.apkUrl ?? info.htmlUrl;
-  window.open(url, "_blank");
-}
+  if (!url) return;
 
-/** Blob 转 base64 字符串（不含 data: 前缀） */
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1] ?? "");
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+  const platform = Capacitor.getPlatform();
+  // Android / iOS：用 _system target 让 Capacitor 转给系统浏览器
+  if (platform === "android" || platform === "ios") {
+    window.open(url, "_system");
+    return;
+  }
+  // Web：新标签页打开
+  window.open(url, "_blank");
 }

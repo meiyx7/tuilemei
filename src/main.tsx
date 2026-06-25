@@ -9,8 +9,8 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-// 注册 Service Worker：PWA 自动检测更新，确保始终加载最新版本
-if ("serviceWorker" in navigator) {
+// 注册 Service Worker：仅在生产环境注册，避免开发时缓存干扰 HMR
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").then((reg) => {
       // 检测到新 Service Worker 等待激活时，自动刷新页面加载新版本
