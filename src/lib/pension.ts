@@ -345,3 +345,46 @@ export function formatYears(n: number): string {
   if (months === 0) return `${years} 年`;
   return `${years} 年 ${months} 个月`;
 }
+
+/* ------------------------------------------------------------------ */
+/* 输入校验与规范化                                                    */
+/* ------------------------------------------------------------------ */
+
+/** YYYY-MM 正则 */
+const YM_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/** 校验 "YYYY-MM" 格式 */
+export function isValidYearMonth(ym: string): boolean {
+  return YM_RE.test(ym);
+}
+
+/** 校验出生年月：格式合法且在 1900-01 ~ 当前月之间 */
+export function isValidBirthDate(ym: string): boolean {
+  if (!isValidYearMonth(ym)) return false;
+  const { year } = parseYearMonth(ym);
+  const now = new Date();
+  if (year < 1900 || year > now.getFullYear()) return false;
+  return true;
+}
+
+/** 校验参加工作时间：格式合法且不晚于当前月 */
+export function isValidWorkStart(ym: string): boolean {
+  if (!isValidYearMonth(ym)) return false;
+  const { year, month } = parseYearMonth(ym);
+  const now = new Date();
+  const nowMonths = now.getFullYear() * 12 + now.getMonth();
+  const inputMonths = year * 12 + (month - 1);
+  if (inputMonths > nowMonths) return false;
+  return true;
+}
+
+/** 限制数值在 [min, max] 区间 */
+export function clamp(n: number, min: number, max: number): number {
+  if (Number.isNaN(n)) return min;
+  return Math.max(min, Math.min(max, n));
+}
+
+/** 校验非负有限数 */
+export function isNonNegativeFinite(n: number): boolean {
+  return Number.isFinite(n) && n >= 0;
+}

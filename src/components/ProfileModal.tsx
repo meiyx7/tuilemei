@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import { Check, LocateFixed, RotateCcw, X } from "lucide-react";
 import { useStore } from "@/store/useStore";
-import { PROVINCE_AVG_SALARY, PROVINCE_LIST, detectProvince } from "@/lib/pension";
+import {
+  PROVINCE_AVG_SALARY,
+  PROVINCE_LIST,
+  clamp,
+  detectProvince,
+  isValidBirthDate,
+  isValidWorkStart,
+  isNonNegativeFinite,
+} from "@/lib/pension";
 import type { Gender, Identity, Profile as ProfileType } from "@/lib/types";
 import Field, { SelectInput, TextInput } from "@/components/Field";
 import Button from "@/components/Button";
@@ -21,6 +29,34 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
   const [saved, setSaved] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locateHint, setLocateHint] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  /** 校验草稿，返回错误映射（空对象表示全部通过） */
+  function validate(d: ProfileType): Record<string, string> {
+    const e: Record<string, string> = {};
+    if (!isValidBirthDate(d.birthDate)) {
+      e.birthDate = "请填写合法的出生年月（1900-01 至当前月）";
+    }
+    if (!isValidWorkStart(d.workStartDate)) {
+      e.workStartDate = "参加工作时间不能晚于当前月";
+    }
+    if (!isNonNegativeFinite(d.monthlySalary)) {
+      e.monthlySalary = "月工资不能为负";
+    }
+    if (!isNonNegativeFinite(d.personalAccountBalance)) {
+      e.personalAccountBalance = "账户余额不能为负";
+    }
+    if (!isNonNegativeFinite(d.paidYears) || d.paidYears > 60) {
+      e.paidYears = "已缴费年限应在 0~60 之间";
+    }
+    if (d.avgContributionIndex < 0.6 || d.avgContributionIndex > 3.0) {
+      e.avgContributionIndex = "缴费指数应在 0.6 ~ 3.0 之间";
+    }
+    if (!isNonNegativeFinite(d.socialAvgSalary)) {
+      e.socialAvgSalary = "社平工资不能为负";
+    }
+    return e;
+  }
 
   // 每次打开弹框时，用最新 profile 重置 draft
   useEffect(() => {
@@ -44,6 +80,13 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
   const set = <K extends keyof ProfileType>(key: K, value: ProfileType[K]) => {
     setDraft((d) => ({ ...d, [key]: value }));
     setSaved(false);
+    // 清掉对应字段的错误
+    setErrors((prev) => {
+      if (!prev[key as string]) return prev;
+      const next = { ...prev };
+      delete next[key as string];
+      return next;
+    });
   };
 
   const handleLocate = async () => {
@@ -67,7 +110,22 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
   };
 
   const handleSave = () => {
-    updateProfile(draft);
+    // 保存前做一次规范化与校验
+    const normalized: ProfileType = {
+      ...draft,
+      monthlySalary: Math.max(0, draft.monthlySalary || 0),
+      personalAccountBalance: Math.max(0, draft.personalAccountBalance || 0),
+      paidYears: clamp(draft.paidYears || 0, 0, 60),
+      avgContributionIndex: clamp(draft.avgContributionIndex || 0.6, 0.6, 3.0),
+      socialAvgSalary: Math.max(0, draft.socialAvgSalary || 0),
+    };
+    const e = validate(normalized);
+    if (Object.keys(e).length > 0) {
+      setErrors(e);
+      return;
+    }
+    setDraft(normalized);
+    updateProfile(normalized);
     completeOnboarding();
     setSaved(true);
     // 短暂展示"已保存"后关闭弹框，页面数据因 zustand 响应式自动刷新
@@ -113,7 +171,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
           {/* 基础信息 */}
           <FormCard step="01" title="基础信息" desc="决定法定退休年龄与退休日期">
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <Field label="出生年月" hint="格式 YYYY-MM，如 1985-06">
+              <Field label="出生年月" hint="格式 YYYY-MM，如 1985-06" error={errors.birthDate}>
                 <TextInput
                   type="month"
                   value={draft.birthDate}
@@ -138,7 +196,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
                   <option value="cadre">干部</option>
                 </SelectInput>
               </Field>
-              <Field label="参加工作时间" hint="格式 YYYY-MM">
+              <Field label="参加工作时间" hint="格式 YYYY-MM" error={errors.workStartDate}>
                 <TextInput
                   type="month"
                   value={draft.workStartDate}
@@ -180,7 +238,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
           {/* 缴费信息 */}
           <FormCard step="02" title="缴费信息" desc="决定养老金计发金额">
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <Field label="当前月工资（元）">
+              <Field label="当前月工资（元）" error={errors.monthlySalary}>
                 <TextInput
                   type="number"
                   min={0}
@@ -188,7 +246,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
                   onChange={(e) => set("monthlySalary", Number(e.target.value))}
                 />
               </Field>
-              <Field label="平均缴费指数" hint="0.6 ~ 3.0">
+              <Field label="平均缴费指数" hint="0.6 ~ 3.0" error={errors.avgContributionIndex}>
                 <TextInput
                   type="number"
                   step={0.1}
@@ -198,7 +256,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
                   onChange={(e) => set("avgContributionIndex", Number(e.target.value))}
                 />
               </Field>
-              <Field label="个人账户累计余额（元）">
+              <Field label="个人账户累计余额（元）" error={errors.personalAccountBalance}>
                 <TextInput
                   type="number"
                   min={0}
@@ -206,7 +264,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
                   onChange={(e) => set("personalAccountBalance", Number(e.target.value))}
                 />
               </Field>
-              <Field label="已缴费年限（年）">
+              <Field label="已缴费年限（年）" error={errors.paidYears}>
                 <TextInput
                   type="number"
                   min={0}
@@ -220,7 +278,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
 
           {/* 政策参数 */}
           <FormCard step="03" title="政策参数" desc="可手动调整，默认按省份填充">
-            <Field label="退休地上年度社平工资（元/月）" hint="影响基础养老金与过渡性养老金">
+            <Field label="退休地上年度社平工资（元/月）" hint="影响基础养老金与过渡性养老金" error={errors.socialAvgSalary}>
               <TextInput
                 type="number"
                 min={0}

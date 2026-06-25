@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/pension";
 import { useStore } from "@/store/useStore";
@@ -49,6 +49,16 @@ export default function CountdownHero({
   const [flyStamps, setFlyStamps] = useState<FlyStamp[]>([]);
   const idRef = useRef(0);
   const ringRef = useRef<HTMLDivElement>(null);
+  /** 收集所有 setTimeout 的 id，组件卸载时统一清理，避免 setState on unmounted 警告 */
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+      timers.clear();
+    };
+  }, []);
 
   const handleCheckin = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     // 首次点击正式打卡
@@ -89,10 +99,12 @@ export default function CountdownHero({
       rotate: -8 + Math.random() * 16,
     };
     setFlyStamps((prev) => [...prev, stamp]);
-    // 1.1s 后移除
-    setTimeout(() => {
+    // 1.2s 后移除；timer id 收集到 timersRef，卸载时统一清理
+    const timer = setTimeout(() => {
       setFlyStamps((prev) => prev.filter((s) => s.id !== stamp.id));
+      timersRef.current.delete(timer);
     }, 1200);
+    timersRef.current.add(timer);
   }, [checked, checkinToday]);
 
   return (

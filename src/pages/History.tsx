@@ -144,7 +144,7 @@ export default function HistoryPage() {
         ) : (
           <ol className="relative flex flex-col gap-4 border-l border-card-edge pl-5">
             {changelog.slice(0, 30).map((entry, i) => (
-              <li key={i} className="relative">
+              <li key={`${entry.timestamp}-${entry.field}-${i}`} className="relative">
                 <span className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full border-2 border-amber bg-card" />
                 <div className="flex flex-col gap-0.5">
                   <span className="num text-xs text-slate-soft">

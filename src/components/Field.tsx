@@ -3,17 +3,23 @@ import { cn } from "@/lib/utils";
 interface FieldProps {
   label: string;
   hint?: string;
+  /** 校验错误信息（优先级高于 hint 显示） */
+  error?: string;
   children: React.ReactNode;
   className?: string;
 }
 
 /** 表单字段容器：衬线标签 + 下划线输入 + 提示 */
-export default function Field({ label, hint, children, className }: FieldProps) {
+export default function Field({ label, hint, error, children, className }: FieldProps) {
   return (
     <label className={cn("flex flex-col gap-1.5", className)}>
       <span className="font-body text-sm font-medium text-ink-soft">{label}</span>
       {children}
-      {hint && <span className="text-xs text-slate-soft">{hint}</span>}
+      {error ? (
+        <span className="text-xs text-stamp">{error}</span>
+      ) : hint ? (
+        <span className="text-xs text-slate-soft">{hint}</span>
+      ) : null}
     </label>
   );
 }

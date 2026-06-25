@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, LocateFixed, SkipForward } from "lucide-react";
 import { useStore } from "@/store/useStore";
-import { PROVINCE_AVG_SALARY, PROVINCE_LIST, detectProvince } from "@/lib/pension";
+import {
+  PROVINCE_AVG_SALARY,
+  PROVINCE_LIST,
+  clamp,
+  detectProvince,
+  isValidBirthDate,
+  isValidWorkStart,
+  isNonNegativeFinite,
+} from "@/lib/pension";
 import type { Gender, Identity, Profile as ProfileType } from "@/lib/types";
 import Field, { SelectInput, TextInput } from "@/components/Field";
 import Button from "@/components/Button";
@@ -31,6 +39,35 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
   const [draft, setDraft] = useState<ProfileType>(profile);
   const [locating, setLocating] = useState(false);
   const [locateHint, setLocateHint] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  /** 校验当前步骤涉及的字段，返回错误映射 */
+  function validateStep(currentStep: number, d: ProfileType): Record<string, string> {
+    const e: Record<string, string> = {};
+    if (currentStep >= 2) {
+      if (!isValidBirthDate(d.birthDate)) e.birthDate = "请填写合法的出生年月";
+      if (!isValidWorkStart(d.workStartDate)) e.workStartDate = "工作时间不能晚于当前月";
+    }
+    if (currentStep >= 3) {
+      if (!isNonNegativeFinite(d.monthlySalary)) e.monthlySalary = "月工资不能为负";
+      if (!isNonNegativeFinite(d.personalAccountBalance)) e.personalAccountBalance = "账户余额不能为负";
+      if (!isNonNegativeFinite(d.paidYears) || d.paidYears > 60) e.paidYears = "年限应在 0~60 之间";
+      if (d.avgContributionIndex < 0.6 || d.avgContributionIndex > 3.0) e.avgContributionIndex = "指数应在 0.6~3.0";
+    }
+    return e;
+  }
+
+  /** 规范化所有数值字段 */
+  function normalize(d: ProfileType): ProfileType {
+    return {
+      ...d,
+      monthlySalary: Math.max(0, d.monthlySalary || 0),
+      personalAccountBalance: Math.max(0, d.personalAccountBalance || 0),
+      paidYears: clamp(d.paidYears || 0, 0, 60),
+      avgContributionIndex: clamp(d.avgContributionIndex || 0.6, 0.6, 3.0),
+      socialAvgSalary: Math.max(0, d.socialAvgSalary || 0),
+    };
+  }
 
   // 打开时重置到第一步，用最新 profile 初始化 draft
   useEffect(() => {
@@ -53,6 +90,13 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
 
   const set = <K extends keyof ProfileType>(key: K, value: ProfileType[K]) => {
     setDraft((d) => ({ ...d, [key]: value }));
+    // 清掉对应字段的错误
+    setErrors((prev) => {
+      if (!prev[key as string]) return prev;
+      const next = { ...prev };
+      delete next[key as string];
+      return next;
+    });
   };
 
   const handleLocate = async () => {
@@ -81,9 +125,27 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
     onClose();
   };
 
-  /** 完成：写入用户填写的档案并标记已完成 */
+  /** 下一步：先校验当前步，通过后才前进 */
+  const handleNext = () => {
+    const e = validateStep(step, draft);
+    if (Object.keys(e).length > 0) {
+      setErrors(e);
+      return;
+    }
+    setErrors({});
+    setStep((s) => s + 1);
+  };
+
+  /** 完成：规范化 + 最终校验后写入 */
   const handleFinish = () => {
-    updateProfile(draft);
+    const normalized = normalize(draft);
+    const e = validateStep(3, normalized);
+    if (Object.keys(e).length > 0) {
+      setDraft(normalized);
+      setErrors(e);
+      return;
+    }
+    updateProfile(normalized);
     completeOnboarding();
     onClose();
   };
@@ -128,7 +190,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
               desc="这几项决定你的法定退休年龄与退休日期"
             />
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <Field label="出生年月" hint="格式 YYYY-MM，如 1985-06">
+              <Field label="出生年月" hint="格式 YYYY-MM，如 1985-06" error={errors.birthDate}>
                 <TextInput
                   type="month"
                   value={draft.birthDate}
@@ -153,7 +215,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                   <option value="cadre">干部</option>
                 </SelectInput>
               </Field>
-              <Field label="参加工作时间" hint="格式 YYYY-MM">
+              <Field label="参加工作时间" hint="格式 YYYY-MM" error={errors.workStartDate}>
                 <TextInput
                   type="month"
                   value={draft.workStartDate}
@@ -201,7 +263,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
               desc="这几项决定退休后每月能领多少养老金"
             />
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <Field label="当前月工资（元）">
+              <Field label="当前月工资（元）" error={errors.monthlySalary}>
                 <TextInput
                   type="number"
                   min={0}
@@ -209,7 +271,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                   onChange={(e) => set("monthlySalary", Number(e.target.value))}
                 />
               </Field>
-              <Field label="平均缴费指数" hint="0.6 ~ 3.0">
+              <Field label="平均缴费指数" hint="0.6 ~ 3.0" error={errors.avgContributionIndex}>
                 <TextInput
                   type="number"
                   step={0.1}
@@ -219,7 +281,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                   onChange={(e) => set("avgContributionIndex", Number(e.target.value))}
                 />
               </Field>
-              <Field label="个人账户累计余额（元）">
+              <Field label="个人账户累计余额（元）" error={errors.personalAccountBalance}>
                 <TextInput
                   type="number"
                   min={0}
@@ -227,7 +289,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
                   onChange={(e) => set("personalAccountBalance", Number(e.target.value))}
                 />
               </Field>
-              <Field label="已缴费年限（年）">
+              <Field label="已缴费年限（年）" error={errors.paidYears}>
                 <TextInput
                   type="number"
                   min={0}
@@ -261,7 +323,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
               </Button>
             )}
             {step < TOTAL_STEPS ? (
-              <Button variant="stamp" onClick={() => setStep((s) => s + 1)}>
+              <Button variant="stamp" onClick={handleNext}>
                 下一步
                 <ArrowRight size={14} />
               </Button>
@@ -292,7 +354,8 @@ function WelcomeStep() {
         </p>
         <ul className="flex flex-col gap-2 border-l-2 border-stamp/40 pl-4">
           <li>测算依据 2025 年渐进式延迟退休政策与城镇职工养老保险计发办法的简化模型</li>
-          <li>所有数据仅保存在本机浏览器，不会上传任何服务器</li>
+          <li>所有档案数据仅保存在本机浏览器，不会上传任何服务器</li>
+          <li>"自动定位"功能会调用浏览器定位 + OpenStreetMap 逆向地理编码识别省份，请求会发送至 OpenStreetMap 服务器；如不愿被定位，可手动选择省份</li>
           <li>之后随时可在右上角设置里修改，结果实时更新</li>
         </ul>
       </div>

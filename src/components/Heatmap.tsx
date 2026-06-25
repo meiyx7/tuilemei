@@ -29,7 +29,9 @@ export default function Heatmap({ year, onPrev, onNext }: HeatmapProps) {
 
     const result: { date: string | null; day: number | null }[][] = [];
     const cursor = new Date(gridStart);
-    // 一年最多 53 周，每周 7 天
+    // 固定生成 53 周（GitHub 风格），不足的尾部留空，多出的会被自动截断
+    // 修复历史 bug：原 break 条件 (cursor.getFullYear() > year && cursor.getDay() === 1)
+    //   在新年第一天恰好是周一时会提前结束，导致最后一周不完整
     for (let w = 0; w < 53; w++) {
       const week: { date: string | null; day: number | null }[] = [];
       for (let d = 0; d < 7; d++) {
@@ -45,8 +47,8 @@ export default function Heatmap({ year, onPrev, onNext }: HeatmapProps) {
         cursor.setDate(cursor.getDate() + 1);
       }
       result.push(week);
-      // 若已经超过该年最后一天所在周，停止
-      if (cursor.getFullYear() > year && cursor.getDay() === 1) break;
+      // 已超过该年所有日期且本周已无任何 year 内的格子，停止
+      if (cursor.getFullYear() > year && week.every((c) => c.date === null)) break;
     }
     return result;
   }, [year]);

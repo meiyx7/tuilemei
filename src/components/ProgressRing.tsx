@@ -32,7 +32,6 @@ export default function ProgressRing({
   const clamped = Math.max(0, Math.min(1, value));
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - clamped);
 
   // 入场动画：从 0 渐进到目标
   const [shown, setShown] = useState(0);
