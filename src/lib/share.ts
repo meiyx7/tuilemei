@@ -76,6 +76,8 @@ export async function shareElement(
   document.body.appendChild(overlay);
 
   // 2. 克隆目标元素到屏幕外可见区域（被遮罩盖住，用户看不到）
+  // 等待布局稳定：避免元素正在动画或布局未完成时取到错误的宽度
+  await new Promise((r) => setTimeout(r, 50));
   const renderWidth = el.getBoundingClientRect().width;
   const clone = el.cloneNode(true) as HTMLElement;
   // 克隆体定位到屏幕左上角（fixed），z-index 低于遮罩，被遮罩盖住

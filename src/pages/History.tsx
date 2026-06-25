@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
-import { CalendarDays, Flame, History as HistoryIcon, Stamp as StampIcon } from "lucide-react";
+import { CalendarDays, Flame, Grid3x3, History as HistoryIcon, Stamp as StampIcon } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import SectionHeader from "@/components/SectionHeader";
 import MonthCalendar from "@/components/MonthCalendar";
+import Heatmap from "@/components/Heatmap";
 import { cn } from "@/lib/utils";
+
+type View = "month" | "heatmap";
 
 export default function HistoryPage() {
   const checkins = useStore((s) => s.checkins);
@@ -14,14 +17,23 @@ export default function HistoryPage() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
+  const [view, setView] = useState<View>("month");
 
   const goPrev = () => {
+    if (view === "heatmap") {
+      setYear((y) => y - 1);
+      return;
+    }
     if (month === 1) {
       setMonth(12);
       setYear((y) => y - 1);
     } else setMonth((m) => m - 1);
   };
   const goNext = () => {
+    if (view === "heatmap") {
+      setYear((y) => y + 1);
+      return;
+    }
     if (month === 12) {
       setMonth(1);
       setYear((y) => y + 1);
@@ -54,10 +66,41 @@ export default function HistoryPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1fr]">
-        {/* 月历 */}
+        {/* 打卡日历（月历 / 热力图切换） */}
         <div className="card-paper p-6 md:p-8">
-          <h3 className="mb-5 font-display text-lg font-semibold text-ink">打卡月历</h3>
-          <MonthCalendar year={year} month={month} onPrev={goPrev} onNext={goNext} />
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <h3 className="font-display text-lg font-semibold text-ink">
+              {view === "month" ? "打卡月历" : "年度热力图"}
+            </h3>
+            {/* 视图切换 */}
+            <div className="flex items-center rounded-[3px] border border-card-edge">
+              <button
+                onClick={() => setView("month")}
+                aria-label="月历视图"
+                className={cn(
+                  "grid h-7 w-7 place-items-center transition-colors",
+                  view === "month" ? "bg-stamp text-paper" : "text-slate hover:text-ink",
+                )}
+              >
+                <CalendarDays size={13} />
+              </button>
+              <button
+                onClick={() => setView("heatmap")}
+                aria-label="热力图视图"
+                className={cn(
+                  "grid h-7 w-7 place-items-center transition-colors",
+                  view === "heatmap" ? "bg-stamp text-paper" : "text-slate hover:text-ink",
+                )}
+              >
+                <Grid3x3 size={13} />
+              </button>
+            </div>
+          </div>
+          {view === "month" ? (
+            <MonthCalendar year={year} month={month} onPrev={goPrev} onNext={goNext} />
+          ) : (
+            <Heatmap year={year} onPrev={goPrev} onNext={goNext} />
+          )}
         </div>
 
         {/* 本月打卡寄语 */}
