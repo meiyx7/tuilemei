@@ -30,6 +30,7 @@
     "@tarojs/webpack5-runner": "4.0.9",
     "@types/react": "^18.3.0",
     "babel-preset-taro": "4.0.9",
+    "less": "^4.6.7",
     "miniprogram-ci": "^1.9.11",
     "react-refresh": "^0.14.0",
     "sass": "^1.77.0",
