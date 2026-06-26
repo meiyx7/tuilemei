@@ -77,12 +77,16 @@ jobs:
           cp scripts/upload-wx.mjs ci-upload/
           cd ci-upload
           npm init -y >/dev/null
-          # miniprogram-ci 1.9.x 依赖旧版 less 的 lib/less 深路径，新版 less 4.x 已移除该结构
+          # miniprogram-ci 1.9.x 用 require('less/lib/less') 深路径，但未声明 less 为依赖，
+          # 且其内部模块解析路径为 node_modules/miniprogram-ci/node_modules/less。
+          # 装好 less 后建立符号链接，让该深路径可达。
           npm install miniprogram-ci@1.9.27 less@3.13.1 >/dev/null 2>&1
+          mkdir -p node_modules/miniprogram-ci/node_modules
+          ln -s ../../less node_modules/miniprogram-ci/node_modules/less
           echo "miniprogram-ci 安装完成: $(ls node_modules/miniprogram-ci/package.json && echo OK)"
-          echo "less 安装完成: $(ls node_modules/less/package.json && echo OK)"
           echo "less 版本: $(node -p "require('less/package.json').version")"
           echo "less/lib/less 存在: $(test -d node_modules/less/lib/less && echo YES || echo NO)"
+          echo "miniprogram-ci 内 less 链接: $(test -d node_modules/miniprogram-ci/node_modules/less/lib/less && echo YES || echo NO)"
 
           WX_APPID="$WX_APPID" \
           WX_PRIVATE_KEY_PATH=../private.key \
