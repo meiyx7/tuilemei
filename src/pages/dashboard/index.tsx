@@ -69,10 +69,6 @@ export default function Dashboard() {
     });
   };
 
-  const goCalc = () => {
-    Taro.reLaunch({ url: '/pages/calc/index' });
-  };
-
   return (
     <View className="page container">
       {/* 顶部 Tab 导航 + 操作按钮 */}
@@ -98,12 +94,7 @@ export default function Dashboard() {
 
       {/* 进度轴 */}
       <View className="section">
-        <View className="section-head-row">
-          <SectionHeader eyebrow="进度轴 · Timeline" title="从入职到退休" />
-          <View className="link-more" onClick={goCalc}>
-            <Text>退休账本 ›</Text>
-          </View>
-        </View>
+        <SectionHeader eyebrow="进度轴 · Timeline" title="从入职到退休" />
         <Timeline
           nodes={[
             { label: '参加工作', date: profile.workStartDate },

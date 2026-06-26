@@ -97,6 +97,18 @@ export default function CountdownHero({
               className="ring"
               style={{ background: `conic-gradient(#C8893B 0% ${pct}%, #E2D9C3 ${pct}% 100%)` }}
             />
+            {/* 进度环圆角端点：起点（顶部）+ 终点（随进度旋转），用小圆点模拟 linecap:round */}
+            {pct > 0 && (
+              <>
+                <View className="ring-cap ring-cap-start" />
+                {pct < 100 && (
+                  <View
+                    className="ring-cap ring-cap-end"
+                    style={{ transform: `rotate(${pct * 3.6}deg) translateY(-199rpx)` }}
+                  />
+                )}
+              </>
+            )}
             <View className="ring-mask">
               <Text className="eyebrow">已过</Text>
               <Text className="ring-pct">

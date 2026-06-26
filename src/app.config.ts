@@ -9,6 +9,7 @@ export default defineAppConfig({
     navigationBarBackgroundColor: '#f4efe3',
     navigationBarTitleText: '退了没',
     navigationBarTextStyle: 'black',
+    navigationStyle: 'custom',
     backgroundColor: '#f4efe3',
   },
   permission: {

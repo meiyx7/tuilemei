@@ -68,6 +68,23 @@
   border-radius: 50%;
   transition: background 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+/* 进度环圆角端点：直径=环厚度(22rpx)，定位在环中心线(半径199rpx)上，
+   用 rotate+translateY 移到对应角度，模拟 linecap:round */
+.ring-cap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22rpx;
+  height: 22rpx;
+  margin: -11rpx 0 0 -11rpx;
+  border-radius: 50%;
+  background-color: $amber;
+  z-index: 2;
+  pointer-events: none;
+}
+.ring-cap-start {
+  transform: rotate(0deg) translateY(-199rpx);
+}
 .ring-mask {
   position: absolute;
   inset: 22rpx;
