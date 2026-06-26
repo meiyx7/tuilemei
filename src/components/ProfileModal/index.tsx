@@ -103,7 +103,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
       <View
         className="modal-card"
         onClick={stopClose}
-        style={{ height: `calc(100vh - ${topReserve}px - 64rpx)` }}
+        style={{ height: `calc(100vh - ${topReserve}px - 96rpx)` }}
       >
         {/* 关闭按钮 */}
         <View className="modal-close" onClick={onClose}>
@@ -116,7 +116,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
           <Text className="modal-desc">所有信息仅保存在本机，不会上传。保存后测算结果实时更新。</Text>
         </View>
 
-        <ScrollView scrollY className="modal-body" style={{ height: `calc(100vh - ${topReserve}px - 340rpx)` }}>
+        <ScrollView scrollY className="modal-body" style={{ height: `calc(100vh - ${topReserve}px - 372rpx)` }}>
           {/* 基础信息 */}
           <FormCard step="01" title="基础信息" desc="决定法定退休年龄与退休日期">
             <View className="form-grid">
