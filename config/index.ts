@@ -23,6 +23,9 @@ export default defineConfig(async (merge) => {
     defineConstants: {
       __APP_VERSION__: JSON.stringify(require('../package.json').version),
       __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+      // 云开发环境 ID：构建时通过环境变量注入（CLOUD_ENV_ID=xxx npm run build:wx）。
+      // 留空则禁用云同步，回退纯本地存储。开通云开发后在微信公众平台 → 云开发 → 设置中获取。
+      __CLOUD_ENV_ID__: JSON.stringify(process.env.CLOUD_ENV_ID || ''),
     },
     copy: { patterns: [], options: {} },
     framework: 'react',

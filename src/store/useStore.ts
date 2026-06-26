@@ -1,4 +1,4 @@
-// 退了没 —— 全局状态（zustand + 小程序本地存储持久化）
+// 退了没 —— 全局状态（zustand + 小程序本地存储持久化 + 云端同步）
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -6,6 +6,7 @@ import Taro from '@tarojs/taro';
 import type { ChangelogEntry, Checkin, Profile } from '@/lib/types';
 import { PROVINCE_AVG_SALARY, todayStr } from '@/lib/pension';
 import { quoteForDate } from '@/lib/quotes';
+import { loadCloudData, saveCloudData } from '@/lib/cloud';
 
 const SAMPLE_PROFILE: Profile = {
   birthDate: '1985-06',
@@ -40,6 +41,13 @@ interface StoreState {
   checkins: Record<string, Checkin>;
   changelog: ChangelogEntry[];
 
+  /** 本地最后修改时间戳（ms），用于云端合并时 LWW 比较 */
+  lastModified: number;
+  /** 正在从云端拉取数据覆盖本地，期间跳过 syncToCloud 避免循环 */
+  syncing: boolean;
+  /** 云端数据是否已就绪（启动时拉取过一次） */
+  cloudReady: boolean;
+
   updateProfile: (patch: Partial<Profile>) => void;
   replaceProfile: (profile: Profile) => void;
   completeOnboarding: () => void;
@@ -48,6 +56,11 @@ interface StoreState {
   checkinToday: () => void;
   streak: () => number;
   totalCheckins: () => number;
+
+  /** 触发 debounced 云端推送（写入操作内部调用） */
+  syncToCloud: () => void;
+  /** 启动时从云端拉取并合并（云端较新则覆盖本地） */
+  hydrateFromCloud: () => Promise<void>;
 }
 
 const FIELD_LABELS: Record<string, string> = {
@@ -62,6 +75,9 @@ function addDays(dateStr: string, delta: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** 云端推送 debounce 计时器（模块级单例） */
+let cloudSyncTimer: ReturnType<typeof setTimeout> | null = null;
+
 export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
@@ -69,6 +85,9 @@ export const useStore = create<StoreState>()(
       onboarded: false,
       checkins: {},
       changelog: [],
+      lastModified: 0,
+      syncing: false,
+      cloudReady: false,
 
       updateProfile: (patch) => {
         const current = get().profile;
@@ -83,11 +102,20 @@ export const useStore = create<StoreState>()(
         set((state) => ({
           profile: { ...state.profile, ...patch },
           changelog: entries.length > 0 ? [...entries, ...state.changelog].slice(0, 100) : state.changelog,
+          lastModified: Date.now(),
         }));
+        get().syncToCloud();
       },
 
-      replaceProfile: (profile) => set({ profile }),
-      completeOnboarding: () => set({ onboarded: true }),
+      replaceProfile: (profile) => {
+        set({ profile, lastModified: Date.now() });
+        get().syncToCloud();
+      },
+
+      completeOnboarding: () => {
+        set({ onboarded: true, lastModified: Date.now() });
+        get().syncToCloud();
+      },
 
       isCheckedInToday: () => Boolean(get().checkins[todayStr()]),
 
@@ -96,7 +124,9 @@ export const useStore = create<StoreState>()(
         if (get().checkins[date]) return;
         set((state) => ({
           checkins: { ...state.checkins, [date]: { date, quote: quoteForDate(date) } },
+          lastModified: Date.now(),
         }));
+        get().syncToCloud();
       },
 
       streak: () => {
@@ -109,11 +139,62 @@ export const useStore = create<StoreState>()(
       },
 
       totalCheckins: () => Object.keys(get().checkins).length,
+
+      syncToCloud: () => {
+        // 正在从云端拉取时跳过推送，避免覆盖循环
+        if (get().syncing) return;
+        if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
+        cloudSyncTimer = setTimeout(() => {
+          const s = get();
+          if (s.syncing) return;
+          saveCloudData({
+            profile: s.profile,
+            checkins: s.checkins,
+            changelog: s.changelog,
+            onboarded: s.onboarded,
+          });
+        }, 1000);
+      },
+
+      hydrateFromCloud: async () => {
+        const cloud = await loadCloudData();
+        if (!cloud) {
+          // 云未就绪或云端无数据：标记完成，保留本地状态
+          set({ cloudReady: true });
+          return;
+        }
+        const local = get();
+        const cloudTime = cloud.updatedAt || 0;
+        // LWW：云端较新才覆盖（清缓存恢复场景：本地 lastModified=0，云端 cloudTime>0）
+        if (cloudTime > local.lastModified) {
+          set({
+            syncing: true,
+            profile: cloud.profile ?? local.profile,
+            checkins: cloud.checkins ?? local.checkins,
+            changelog: cloud.changelog ?? local.changelog,
+            onboarded: cloud.onboarded ?? local.onboarded,
+            lastModified: cloudTime,
+            cloudReady: true,
+          });
+          // 解除 syncing 标记（延后到下一个微任务，确保 React 完成渲染）
+          setTimeout(() => set({ syncing: false }), 0);
+        } else {
+          set({ cloudReady: true });
+        }
+      },
     }),
     {
       name: 'tuilemei-store',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => taroStorage),
+      // 仅持久化数据字段，运行时标记（syncing/cloudReady）不入库
+      partialize: (s) => ({
+        profile: s.profile,
+        onboarded: s.onboarded,
+        checkins: s.checkins,
+        changelog: s.changelog,
+        lastModified: s.lastModified,
+      }),
     },
   ),
 );
