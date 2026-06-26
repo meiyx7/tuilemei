@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text } from '@tarojs/components';
+import { useShareAppMessage, useShareTimeline } from '@tarojs/taro';
 import { cn } from '@/lib/utils';
 import { useStore } from '@/store/useStore';
 import {
@@ -34,6 +35,20 @@ export default function Dashboard() {
     0,
     Math.min(1, (nowMonths - workStartMonths) / (retireMonths - workStartMonths || 1)),
   );
+
+  // 原生分享：转发给好友 / 朋友圈。卡片标题展示退休倒计时摘要，
+  // 不再用 Canvas 截图，避免与首页不一致的问题。
+  const retired = pension.remaining.totalDays <= 0;
+  const shareTitle = retired
+    ? '退了没 · 已到法定退休年龄'
+    : `退了没 · 距退休还有 ${pension.remaining.years} 年 ${pension.remaining.months} 月`;
+  useShareAppMessage(() => ({
+    title: shareTitle,
+    path: '/pages/dashboard/index',
+  }));
+  useShareTimeline(() => ({
+    title: shareTitle,
+  }));
 
   return (
     <View className="page container">

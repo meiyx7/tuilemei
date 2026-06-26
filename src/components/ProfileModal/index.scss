@@ -9,9 +9,10 @@
   z-index: 50;
   background-color: rgba(28, 26, 23, 0.4);
   display: flex;
-  align-items: center;
+  /* 弹框从顶部预留区下方开始，整体不超 Tab 栏位置 */
+  align-items: flex-start;
   justify-content: center;
-  padding: 32rpx;
+  padding: 0 32rpx 32rpx;
 }
 
 .modal-card {
@@ -19,9 +20,9 @@
   position: relative;
   width: 100%;
   max-width: 640rpx;
-  /* 用固定 height 而非 max-height，确保 flex 子项高度可计算，
-     ScrollView 才能正确滚动而不溢出到操作按钮区域 */
-  height: 88vh;
+  /* 高度由内联 style 控制（100vh - 顶部预留 - 底部 padding），
+     确保弹框不超出 Tab 栏且 ScrollView 能正确滚动 */
+  max-height: calc(100vh - 64rpx);
   padding: 40rpx;
   display: flex;
   flex-direction: column;

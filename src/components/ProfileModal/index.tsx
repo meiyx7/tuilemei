@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, Input, Picker, ScrollView } from '@tarojs/components';
+import Taro from '@tarojs/taro';
 import { useStore } from '@/store/useStore';
 import { PROVINCE_AVG_SALARY, PROVINCE_LIST, detectProvince } from '@/lib/pension';
 import type { Gender, Identity, Profile as ProfileType } from '@/lib/types';
@@ -84,9 +85,26 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
   const identityIndex = Math.max(0, IDENTITY_VALUES.indexOf(draft.identity));
   const provinceIndex = Math.max(0, PROVINCE_LIST.indexOf(draft.province));
 
+  // 自定义导航栏：弹框顶部需避让状态栏 + TopTab 高度，
+  // 否则会盖住胶囊按钮和 Tab 栏。用胶囊按钮底边 + 间距作为顶部预留。
+  const sys = Taro.getWindowInfo?.() || Taro.getSystemInfoSync();
+  let topReserve = (sys.statusBarHeight || 20) + 88; // 状态栏 + 近似 TopTab 高度(px)
+  try {
+    const menu = (Taro as any).getMenuButtonBoundingClientRect?.();
+    if (menu && menu.bottom) {
+      topReserve = menu.bottom + 12; // 胶囊底边 + 12px 间距
+    }
+  } catch {
+    /* 兜底用状态栏+88 */
+  }
+
   return (
-    <View catchMove className="modal-overlay" onClick={onClose}>
-      <View className="modal-card" onClick={stopClose}>
+    <View catchMove className="modal-overlay" onClick={onClose} style={{ paddingTop: `${topReserve}px` }}>
+      <View
+        className="modal-card"
+        onClick={stopClose}
+        style={{ height: `calc(100vh - ${topReserve}px - 64rpx)` }}
+      >
         {/* 关闭按钮 */}
         <View className="modal-close" onClick={onClose}>
           <Text>×</Text>
@@ -98,7 +116,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
           <Text className="modal-desc">所有信息仅保存在本机，不会上传。保存后测算结果实时更新。</Text>
         </View>
 
-        <ScrollView scrollY className="modal-body" style={{ height: 'calc(88vh - 340rpx)' }}>
+        <ScrollView scrollY className="modal-body" style={{ height: `calc(100vh - ${topReserve}px - 340rpx)` }}>
           {/* 基础信息 */}
           <FormCard step="01" title="基础信息" desc="决定法定退休年龄与退休日期">
             <View className="form-grid">
