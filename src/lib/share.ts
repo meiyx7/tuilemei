@@ -41,7 +41,7 @@ export function drawShareCard(
 ): void {
   const { retirement, pension, careerProgress, streak, workStartDate, checked } = data;
   const W = rpx2px(680);
-  const H = rpx2px(1520);
+  const H = rpx2px(1280);
   canvas.width = W;
   canvas.height = H;
   const px = rpx2px;
@@ -156,37 +156,42 @@ export function drawShareCard(
   // ========== 3. 倒计时数字 ==========
   const { remaining } = pension;
   const retired = remaining.totalDays <= 0;
+  const countdownY = pad + px(620);
 
-  ctx.textAlign = 'center';
   if (retired) {
+    ctx.textAlign = 'center';
     ctx.fillStyle = '#b23a2e';
     ctx.font = `bold ${px(96)}px serif`;
-    ctx.fillText('到点了', cx, pad + px(620));
+    ctx.fillText('到点了', cx, countdownY);
   } else {
-    // 年（大号）
-    const yearsStr = String(remaining.years).padStart(2, '0');
-    ctx.fillStyle = '#1c1a17';
-    ctx.font = `bold ${px(96)}px monospace`;
-    ctx.fillText(yearsStr, cx - px(110), pad + px(620));
-
-    ctx.fillStyle = '#5b6b6a';
-    ctx.font = `${px(36)}px serif`;
-    ctx.fillText('年', cx - px(50), pad + px(620));
-
-    // 月（中号）
-    const monthsStr = String(remaining.months).padStart(2, '0');
-    ctx.fillStyle = '#1c1a17';
-    ctx.font = `bold ${px(64)}px monospace`;
-    ctx.fillText(monthsStr, cx + px(20), pad + px(620));
-
-    ctx.fillStyle = '#5b6b6a';
-    ctx.font = `${px(28)}px serif`;
-    ctx.fillText('月', cx + px(70), pad + px(620));
+    // 用 measureText 精确测量各部分宽度，整体居中后左对齐依次绘制，
+    // 避免大号字体居中定位时相邻文字重叠
+    const parts = [
+      { text: String(remaining.years).padStart(2, '0'), font: `bold ${px(96)}px monospace`, color: '#1c1a17' },
+      { text: '年', font: `${px(36)}px serif`, color: '#5b6b6a' },
+      { text: String(remaining.months).padStart(2, '0'), font: `bold ${px(64)}px monospace`, color: '#1c1a17' },
+      { text: '月', font: `${px(28)}px serif`, color: '#5b6b6a' },
+    ];
+    let totalW = 0;
+    for (const p of parts) {
+      ctx.font = p.font;
+      totalW += ctx.measureText(p.text).width;
+    }
+    let drawX = cx - totalW / 2;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    for (const p of parts) {
+      ctx.font = p.font;
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.text, drawX, countdownY);
+      drawX += ctx.measureText(p.text).width;
+    }
 
     // 约天数
+    ctx.textAlign = 'center';
     ctx.fillStyle = '#5b6b6a';
     ctx.font = `${px(26)}px serif`;
-    ctx.fillText(`· 约 ${formatMoney(remaining.totalDays)} 天`, cx, pad + px(660));
+    ctx.fillText(`· 约 ${formatMoney(remaining.totalDays)} 天`, cx, countdownY + px(40));
   }
 
   // ========== 4. 退休年龄信息 ==========
@@ -284,14 +289,6 @@ export function drawShareCard(
     ctx.textAlign = 'center';
     ctx.fillText('当前', nowX, tlY - px(20));
   }
-
-  // ========== 7. 底部声明 ==========
-  drawRule(ctx, innerX, pad + px(1180), innerW);
-
-  ctx.fillStyle = '#8a9796';
-  ctx.font = `${px(20)}px monospace`;
-  ctx.textAlign = 'center';
-  ctx.fillText(`退了没 · 连续打卡 ${streak} 天 · 结果仅供参考`, W / 2, H - pad - px(28));
 
   ctx.textAlign = 'left';
 }

@@ -19,11 +19,14 @@
   position: relative;
   width: 100%;
   max-width: 640rpx;
-  max-height: 90vh;
+  /* 用固定 height 而非 max-height，确保 flex 子项高度可计算，
+     ScrollView 才能正确滚动而不溢出到操作按钮区域 */
+  height: 88vh;
   padding: 40rpx;
   display: flex;
   flex-direction: column;
   border-radius: 6rpx;
+  overflow: hidden;
 }
 
 .modal-close {
@@ -41,6 +44,7 @@
 }
 
 .modal-header {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 6rpx;
@@ -59,8 +63,8 @@
 }
 
 .modal-body {
-  flex: 1;
-  min-height: 0;
+  /* 高度由内联 style calc(88vh - 340rpx) 控制，
+     确保小程序 ScrollView 能正确滚动 */
   display: flex;
   flex-direction: column;
   gap: 28rpx;
@@ -180,6 +184,7 @@
 
 /* 操作按钮 */
 .modal-actions {
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 16rpx;
