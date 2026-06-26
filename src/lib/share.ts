@@ -4,7 +4,7 @@
 
 import Taro from '@tarojs/taro';
 import type { PensionResult, RetirementAgeResult } from './types';
-import { formatMoney, parseYearMonth } from './pension';
+import { formatMoney, parseYearMonth, todayYm } from './pension';
 
 interface ShareData {
   retirement: RetirementAgeResult;
@@ -28,6 +28,12 @@ function minContributionDate(workStart: string, years: number): string {
   const y = Math.floor(total / 12);
   const m = (total % 12) + 1;
   return `${y}-${String(m).padStart(2, '0')}`;
+}
+
+/** 年月转月数（与 dashboard 的 ymToMonths 保持一致） */
+function ymToMonths(ym: string): number {
+  const { year, month } = parseYearMonth(ym);
+  return year * 12 + month;
 }
 
 /**
@@ -221,11 +227,53 @@ export function drawShareCard(
 
   drawRule(ctx, innerX, pad + px(910), innerW);
 
-  // ========== 6. 时间轴 ==========
+  // ========== 6. 时间轴（与首页 Timeline 组件逻辑严格一致） ==========
   const tlY = pad + px(980);
   const tlStartX = innerX + px(40);
   const tlEndX = innerX + innerW - px(40);
   const tlW = tlEndX - tlStartX;
+
+  // 节点列表：与 dashboard Timeline 入参一致
+  const nowMonths = ymToMonths(todayYm());
+  interface TlNode { label: string; date: string; current?: boolean; past?: boolean }
+  const baseNodes: TlNode[] = [
+    { label: '参加工作', date: workStartDate },
+    { label: '缴满 15 年', date: minContributionDate(workStartDate, 15) },
+    { label: '法定退休', date: retirement.retirementDate },
+  ];
+  // 过滤掉日期等于当前月的节点（与 Timeline.realNodes 一致）
+  const realNodes = baseNodes.filter((n) => ymToMonths(n.date) !== nowMonths);
+  const sorted = [...realNodes].sort((a, b) => ymToMonths(a.date) - ymToMonths(b.date));
+  // 找到当前节点应插入的位置（第一个 date > nowMonths 的索引）
+  let insertIdx = sorted.length;
+  for (let i = 0; i < sorted.length; i++) {
+    if (ymToMonths(sorted[i].date) > nowMonths) {
+      insertIdx = i;
+      break;
+    }
+  }
+  // 插入"当前"节点
+  const resolved: TlNode[] = [
+    ...sorted.slice(0, insertIdx),
+    { label: '当前', date: todayYm(), current: true },
+    ...sorted.slice(insertIdx),
+  ];
+  const finalNodes = resolved.map((n) => ({
+    ...n,
+    past: n.current ? true : ymToMonths(n.date) <= nowMonths,
+  }));
+
+  // 进度计算（与 dashboard progressOfCurrent 一致）
+  let progress: number;
+  const currentIdx = finalNodes.findIndex((n) => n.current);
+  if (currentIdx === -1) {
+    const lastPastIdx = finalNodes.map((n) => n.past).lastIndexOf(true);
+    if (lastPastIdx === -1) progress = 0;
+    else if (lastPastIdx === finalNodes.length - 1) progress = 100;
+    else progress = ((lastPastIdx + 0.5) / (finalNodes.length - 1)) * 100;
+  } else {
+    progress = (currentIdx / (finalNodes.length - 1)) * 100;
+  }
 
   // 底线
   ctx.strokeStyle = '#e2d9c3';
@@ -236,36 +284,32 @@ export function drawShareCard(
   ctx.stroke();
 
   // 进度线
-  if (careerProgress > 0) {
+  if (progress > 0) {
     ctx.strokeStyle = '#c8893b';
     ctx.lineWidth = px(3);
     ctx.beginPath();
     ctx.moveTo(tlStartX, tlY);
-    ctx.lineTo(tlStartX + tlW * careerProgress, tlY);
+    ctx.lineTo(tlStartX + (tlW * progress) / 100, tlY);
     ctx.stroke();
   }
 
-  // 三个节点
-  const nodes = [
-    { label: '参加工作', date: workStartDate },
-    { label: '缴满 15 年', date: minContributionDate(workStartDate, 15) },
-    { label: '法定退休', date: retirement.retirementDate },
-  ];
-
-  nodes.forEach((node, i) => {
-    const x = tlStartX + (tlW / (nodes.length - 1)) * i;
+  // 节点（等距分布）
+  finalNodes.forEach((node, i) => {
+    const x = tlStartX + (tlW / (finalNodes.length - 1)) * i;
+    const isCurrent = !!node.current;
+    const isPast = !!node.past;
 
     // 圆点
     ctx.beginPath();
     ctx.arc(x, tlY, px(14), 0, Math.PI * 2);
-    ctx.fillStyle = '#fbf8f0';
+    ctx.fillStyle = isCurrent ? '#c8893b' : '#fbf8f0';
     ctx.fill();
-    ctx.strokeStyle = '#c8893b';
+    ctx.strokeStyle = isCurrent ? '#c8893b' : isPast ? '#b23a2e' : '#c8893b';
     ctx.lineWidth = px(3);
     ctx.stroke();
 
     // 标签
-    ctx.fillStyle = '#1c1a17';
+    ctx.fillStyle = isCurrent ? '#c8893b' : isPast ? '#1c1a17' : '#5b6b6a';
     ctx.font = `${px(24)}px serif`;
     ctx.textAlign = 'center';
     ctx.fillText(node.label, x, tlY + px(44));
@@ -275,20 +319,6 @@ export function drawShareCard(
     ctx.font = `${px(20)}px monospace`;
     ctx.fillText(node.date, x, tlY + px(72));
   });
-
-  // 当前位置标记（在进度线末端）
-  if (careerProgress > 0 && careerProgress < 1) {
-    const nowX = tlStartX + tlW * careerProgress;
-    ctx.fillStyle = '#b23a2e';
-    ctx.beginPath();
-    ctx.arc(nowX, tlY, px(8), 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#b23a2e';
-    ctx.font = `${px(20)}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillText('当前', nowX, tlY - px(20));
-  }
 
   ctx.textAlign = 'left';
 }
