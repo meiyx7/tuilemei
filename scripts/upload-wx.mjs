@@ -6,7 +6,7 @@
 //
 // 在 CI 中：private key 从 GitHub Secret 注入，见 .github/workflows/miniprogram.yml
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ci from 'miniprogram-ci';
@@ -53,6 +53,17 @@ async function main() {
     console.log('═══════════════════════════════════════════\n');
     return;
   }
+
+  // 真实上传前：校验构建产物完整性
+  const requiredFiles = ['app.json', 'app.js', 'app.wxss'];
+  for (const f of requiredFiles) {
+    if (!existsSync(resolve(PROJECT_PATH, f))) {
+      console.error(`\n构建产物缺失：${resolve(PROJECT_PATH, f)}`);
+      console.error('请先运行 pnpm run build:wx');
+      process.exit(1);
+    }
+  }
+  console.log('✓ 构建产物完整性校验通过');
 
   // 真实上传模式
   try {
