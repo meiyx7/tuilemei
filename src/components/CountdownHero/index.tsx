@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text } from '@tarojs/components';
 import type { ITouchEvent } from '@tarojs/components';
 import Taro from '@tarojs/taro';
@@ -27,10 +27,12 @@ interface FlyStamp {
   rot: string;
 }
 
+/** 缓存圆环在视口中的位置与尺寸，用于触摸时换算落地偏移 */
+interface RingRect { left: number; top: number; width: number; height: number }
+
 /**
  * 退休倒计时主视觉：环形进度（conic-gradient）+ 超大衬线倒计时数字。
- * 圆环承担每日打卡——点击圆环触发"-1"飞印动画：从随机边缘飞向圆环中心并淡出。
- * 小程序无 MouseEvent，落点固定为圆环中心，起点用随机偏移模拟。
+ * 圆环承担每日打卡——点击圆环触发"-1"飞印动画：从随机边缘飞向触摸点并淡出。
  */
 export default function CountdownHero({
   retirement,
@@ -52,22 +54,46 @@ export default function CountdownHero({
   const streak = useStore((s) => s.streak());
   const [flyStamps, setFlyStamps] = useState<FlyStamp[]>([]);
   const idRef = useRef(0);
+  // 圆环 rect 缓存：挂载时 + 页面滚动后刷新（触摸时直接读取，避免异步等待）
+  const ringRectRef = useRef<RingRect | null>(null);
 
-  const handleCheckin = useCallback((touchRelX?: number, touchRelY?: number) => {
+  // 挂载时测量圆环位置，用于触摸坐标换算
+  useEffect(() => {
+    const measure = () => {
+      const query = Taro.createSelectorQuery();
+      query.select('.ring-btn').boundingClientRect();
+      query.exec((res) => {
+        const rect = res?.[0];
+        if (rect) {
+          ringRectRef.current = {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+          };
+        }
+      });
+    };
+    // 延迟一帧，确保渲染完成
+    const timer = setTimeout(measure, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleCheckin = useCallback((clientX?: number, clientY?: number) => {
     // 首次点击正式打卡
     if (!checked) checkinToday();
 
     // 落地位置：跟随触摸点，相对圆环中心换算成 rpx
-    // 圆环为 420rpx×420rpx，中心 = (210rpx, 210rpx)
-    // touchRelX/Y 是相对圆环左上角的坐标(px)，落地偏移 = (touch - 中心) 转 rpx
     let toXrpx = 0;
     let toYrpx = 0;
-    if (touchRelX != null && touchRelY != null) {
+    const rect = ringRectRef.current;
+    if (clientX != null && clientY != null && rect) {
       const sys = Taro.getWindowInfo?.() || Taro.getSystemInfoSync();
       const px2rpx = 750 / (sys.windowWidth || 375);
-      const centerPx = (210 / 750) * (sys.windowWidth || 375); // 210rpx → px
-      toXrpx = Math.round((touchRelX - centerPx) * px2rpx);
-      toYrpx = Math.round((touchRelY - centerPx) * px2rpx);
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      toXrpx = Math.round((clientX - centerX) * px2rpx);
+      toYrpx = Math.round((clientY - centerY) * px2rpx);
     }
 
     // 随机起点偏移：从屏幕边缘飞向落地点（路径要长，视觉冲击力强）
@@ -92,6 +118,14 @@ export default function CountdownHero({
     setTimeout(() => {
       setFlyStamps((prev) => prev.filter((s) => s.id !== stamp.id));
     }, 1200);
+
+    // 触摸后刷新一次 rect（页面可能滚动），下次点击位置更准
+    const query = Taro.createSelectorQuery();
+    query.select('.ring-btn').boundingClientRect();
+    query.exec((res) => {
+      const r = res?.[0];
+      if (r) ringRectRef.current = { left: r.left, top: r.top, width: r.width, height: r.height };
+    });
   }, [checked, checkinToday]);
 
   const pct = Math.round(careerProgress * 100);
@@ -112,9 +146,9 @@ export default function CountdownHero({
           <View
             className="ring-btn"
             onTouchStart={(e: ITouchEvent) => {
-              // 小程序 touch 事件 touches[0].x/y 为相对组件左上角的坐标
+              // 用 clientX/clientY（相对视口）配合缓存的圆环 rect 计算落地偏移
               const t = e.touches?.[0] || (e as any).detail?.touches?.[0];
-              handleCheckin(t?.x, t?.y);
+              handleCheckin(t?.clientX, t?.clientY);
             }}
           >
             <View

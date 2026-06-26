@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { View, Text, Canvas } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import { View, Text } from '@tarojs/components';
 import { cn } from '@/lib/utils';
 import { useStore } from '@/store/useStore';
 import {
@@ -9,7 +8,6 @@ import {
   parseYearMonth,
   todayYm,
 } from '@/lib/pension';
-import { drawShareCard, saveCanvasToAlbum } from '@/lib/share';
 import { APP_VERSION, BUILD_TIME } from '@/lib/updater';
 import CountdownHero from '@/components/CountdownHero';
 import ProfileModal from '@/components/ProfileModal';
@@ -20,13 +18,10 @@ import './index.scss';
 export default function Dashboard() {
   const profile = useStore((s) => s.profile);
   const onboarded = useStore((s) => s.onboarded);
-  const streak = useStore((s) => s.streak());
-  const checked = useStore((s) => s.isCheckedInToday());
   const retirement = calcRetirementAge(profile);
   const pension = calcPension(profile);
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [sharing, setSharing] = useState(false);
 
   // 职业生涯进度：已工作月数 / 总工作月数（入职到退休）
   const workStartMonths = parseYearMonth(profile.workStartDate).year * 12 +
@@ -40,47 +35,10 @@ export default function Dashboard() {
     Math.min(1, (nowMonths - workStartMonths) / (retireMonths - workStartMonths || 1)),
   );
 
-  // 分享：showLoading → 获取 Canvas 节点 → drawShareCard → saveCanvasToAlbum → hideLoading
-  const handleShare = () => {
-    if (sharing) return;
-    setSharing(true);
-    Taro.showLoading({ title: '生成中...', mask: true });
-    const query = Taro.createSelectorQuery();
-    query.select('#shareCanvas').fields({ node: true, size: true }).exec((res) => {
-      const canvas = res[0]?.node;
-      if (!canvas) {
-        Taro.hideLoading();
-        setSharing(false);
-        Taro.showToast({ title: '分享失败', icon: 'none' });
-        return;
-      }
-      const ctx = canvas.getContext('2d');
-      drawShareCard(ctx, canvas, { retirement, pension, careerProgress, streak, workStartDate: profile.workStartDate, checked });
-      setTimeout(async () => {
-        try {
-          await saveCanvasToAlbum(canvas);
-        } catch {
-          Taro.showToast({ title: '保存失败', icon: 'none' });
-        } finally {
-          Taro.hideLoading();
-          setSharing(false);
-        }
-      }, 80);
-    });
-  };
-
   return (
     <View className="page container">
-      {/* 顶部 Tab 导航 + 操作按钮 */}
-      <TopTab
-        current="dashboard"
-        extra={
-          <>
-            <View className="toptab-btn toptab-btn-icon-settings" onClick={() => setProfileOpen(true)} />
-            <View className={cn('toptab-btn toptab-btn-icon-share', sharing && 'toptab-btn-disabled')} onClick={handleShare} />
-          </>
-        }
-      />
+      {/* 顶部 Tab 导航（无 extra，保持简洁不晃动） */}
+      <TopTab current="dashboard" />
 
       {/* 倒计时主视觉 */}
       <View className="section">
@@ -117,9 +75,6 @@ export default function Dashboard() {
           {BUILD_TIME ? ` · ${BUILD_TIME}` : ''}
         </Text>
       </View>
-
-      {/* 隐藏的分享 Canvas（type='2d'） */}
-      <Canvas type="2d" id="shareCanvas" className="share-canvas" />
 
       {/* 首次使用引导 */}
       <OnboardingModal open={!onboarded} onClose={() => {}} />

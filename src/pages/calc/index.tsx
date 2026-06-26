@@ -40,13 +40,8 @@ export default function Calc() {
 
   return (
     <View className="page container">
-      {/* 顶部 Tab 导航 + 调整参数按钮 */}
-      <TopTab
-        current="calc"
-        extra={
-          <View className="toptab-btn toptab-btn-icon-settings" onClick={() => setProfileOpen(true)} />
-        }
-      />
+      {/* 顶部 Tab 导航（无 extra） */}
+      <TopTab current="calc" />
 
       {/* 养老金总额 */}
       <View className="section">
@@ -56,6 +51,11 @@ export default function Calc() {
           desc="依据 2025 年渐进式延迟退休政策与城镇职工基本养老保险计发办法的简化模型测算。"
         />
         <View className="total-card card-paper">
+          {/* 右上角设置按钮：调整测算参数 */}
+          <View
+            className="total-settings-btn toptab-btn toptab-btn-icon-settings"
+            onClick={() => setProfileOpen(true)}
+          />
           <Text className="total-eyebrow">每月可领</Text>
           <View className="total-row">
             <Text className="num total-value">{formatMoney(pension.totalMonthly)}</Text>

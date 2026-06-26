@@ -41,11 +41,19 @@
 
 /* 总额卡 */
 .total-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 16rpx;
   padding: 48rpx 40rpx;
   border-radius: 8rpx;
+}
+
+/* 右上角设置按钮：绝对定位在总额卡角落 */
+.total-settings-btn {
+  position: absolute;
+  top: 24rpx;
+  right: 24rpx;
 }
 
 .total-eyebrow {
