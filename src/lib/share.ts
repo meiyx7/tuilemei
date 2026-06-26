@@ -1,170 +1,191 @@
-import { toPng } from "html-to-image";
-import { Capacitor } from "@capacitor/core";
-import { Share } from "@capacitor/share";
-import { Filesystem, Directory } from "@capacitor/filesystem";
+// 退了没小程序 —— 分享卡片生成（Canvas 2D 绘制 + 保存相册）
+// 小程序无法截图 DOM，改用 Canvas 手绘退休进度卡片
 
-interface ShareOptions {
-  /** 截图区域内边距（px），避免内容紧贴边框 */
-  padding?: number;
-  filename?: string;
+import Taro from '@tarojs/taro';
+import type { PensionResult, RetirementAgeResult } from './types';
+import { formatMoney } from './pension';
+
+interface ShareData {
+  retirement: RetirementAgeResult;
+  pension: PensionResult;
+  careerProgress: number;
+  streak: number;
+}
+
+/** rpx 转 px（用于 Canvas 绘图，Canvas 以 px 为单位） */
+function rpx2px(rpx: number): number {
+  const sys = Taro.getWindowInfo?.() || Taro.getSystemInfoSync();
+  return (rpx / 750) * sys.windowWidth;
 }
 
 /**
- * 将目标 DOM 截图为 PNG 并分享。
- * - 原生 App（Capacitor）：写入缓存目录后调用原生分享面板（支持图片分享）。
- * - 浏览器：优先 Web Share API（带缩略图），不支持时回退为下载图片。
- *
- * 实现要点：克隆目标元素到屏幕外可见区域（top:0, left:0, opacity:0 被遮罩盖住），
- * 给克隆体加 padding/边框后截图。原元素完全不动，页面布局无任何变化。
- * 克隆体保留在可视渲染区（不能 display:none 或负坐标），确保 html-to-image 能正确截图。
+ * 在 Canvas 2D 上下文上绘制分享卡片。
+ * 调用方需先创建 Canvas 并获取 2d 上下文，传入 canvas 节点用于尺寸设置。
  */
-export async function shareElement(
-  el: HTMLElement,
-  opts: ShareOptions = {},
-): Promise<void> {
-  const {
-    padding = 36,
-    filename = "退了没-退休进度.png",
-  } = opts;
+export function drawShareCard(
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  data: ShareData,
+): void {
+  const { retirement, pension, careerProgress, streak } = data;
+  const W = rpx2px(680);
+  const H = rpx2px(860);
+  canvas.width = W;
+  canvas.height = H;
 
-  // 1. 全屏遮罩：盖住页面，显示"正在生成"提示卡片
-  const overlay = document.createElement("div");
-  overlay.style.cssText = [
-    "position: fixed",
-    "inset: 0",
-    "z-index: 99990",
-    "background-color: rgba(28,26,23,0.35)",
-    "backdrop-filter: blur(4px)",
-    "-webkit-backdrop-filter: blur(4px)",
-    "display: flex",
-    "align-items: center",
-    "justify-content: center",
-  ].join(";");
-  const card = document.createElement("div");
-  card.style.cssText = [
-    "display: flex",
-    "align-items: center",
-    "gap: 12px",
-    "padding: 18px 24px",
-    "background-color: #f5f1e8",
-    "border: 1px solid rgba(28,26,23,0.12)",
-    "border-radius: 12px",
-    "box-shadow: 0 12px 32px rgba(28,26,23,0.18)",
-  ].join(";");
-  // 旋转加载图标（SVG，与应用印章色调一致）
-  const spinner = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  spinner.setAttribute("width", "20");
-  spinner.setAttribute("height", "20");
-  spinner.setAttribute("viewBox", "0 0 24 24");
-  spinner.setAttribute("fill", "none");
-  spinner.style.cssText = "animation: tlm-spin 0.8s linear infinite;";
-  spinner.innerHTML =
-    '<circle cx="12" cy="12" r="9" stroke="#C8893B" stroke-opacity="0.25" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="#C8893B" stroke-width="3" stroke-linecap="round"/>';
-  const hint = document.createElement("span");
-  hint.textContent = "正在生成分享图片…";
-  hint.style.cssText = "font-size:14px;color:#3c3933;font-weight:500;";
-  card.appendChild(spinner);
-  card.appendChild(hint);
-  overlay.appendChild(card);
-  // 注入旋转动画（若页面尚未定义）
-  if (!document.getElementById("tlm-spin-keyframe")) {
-    const style = document.createElement("style");
-    style.id = "tlm-spin-keyframe";
-    style.textContent = "@keyframes tlm-spin { to { transform: rotate(360deg); } }";
-    document.head.appendChild(style);
+  // 背景
+  ctx.fillStyle = '#f4efe3';
+  ctx.fillRect(0, 0, W, H);
+
+  // 背景点阵纹理
+  ctx.fillStyle = 'rgba(28,26,23,0.04)';
+  for (let x = 0; x < W; x += rpx2px(44)) {
+    for (let y = 0; y < H; y += rpx2px(44)) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
-  document.body.appendChild(overlay);
 
-  // 2. 克隆目标元素到屏幕外可见区域（被遮罩盖住，用户看不到）
-  // 等待布局稳定：避免元素正在动画或布局未完成时取到错误的宽度
-  await new Promise((r) => setTimeout(r, 50));
-  const renderWidth = el.getBoundingClientRect().width;
-  const clone = el.cloneNode(true) as HTMLElement;
-  // 克隆体定位到屏幕左上角（fixed），z-index 低于遮罩，被遮罩盖住
-  // 必须保留在可视渲染区（不能用 display:none 或负坐标），否则 html-to-image 截图为空
-  clone.style.cssText = [
-    "position: fixed",
-    "left: 0",
-    "top: 0",
-    "z-index: 99980",
-    "box-sizing: border-box",
-    `width: ${renderWidth + padding * 2 + 2}px`,
-    `padding: ${padding}px`,
-    "border: 1px solid rgba(28,26,23,0.15)",
-    "border-radius: 8px",
-    "margin: 0",
-    "background-color: #f5f1e8",
-  ].join(";");
-  document.body.appendChild(clone);
+  const pad = rpx2px(48);
+  const cardW = W - pad * 2;
+  const cardH = H - pad * 2;
 
-  // 等待两帧确保克隆体渲染完成
-  await new Promise((r) => requestAnimationFrame(() => r(null)));
-  await new Promise((r) => requestAnimationFrame(() => r(null)));
+  // 卡片底
+  ctx.fillStyle = '#fbf8f0';
+  ctx.strokeStyle = '#e2d9c3';
+  ctx.lineWidth = 1;
+  roundRect(ctx, pad, pad, cardW, cardH, rpx2px(8));
+  ctx.fill();
+  ctx.stroke();
 
-  try {
-    const dataUrl = await toPng(clone, {
-      quality: 0.95,
-      pixelRatio: 2,
-      backgroundColor: "#f5f1e8",
-      cacheBust: true,
-      skipFonts: false,
-    });
+  // ---- 标题 ----
+  ctx.fillStyle = '#5b6b6a';
+  ctx.font = `${rpx2px(22)}px monospace`;
+  ctx.textAlign = 'left';
+  ctx.fillText('退休进度 · COUNTDOWN', pad + rpx2px(32), pad + rpx2px(56));
 
-    const res = await fetch(dataUrl);
-    const blob = await res.blob();
-    if (blob.size === 0) throw new Error("截图为空");
+  ctx.fillStyle = '#1c1a17';
+  ctx.font = `bold ${rpx2px(48)}px serif`;
+  ctx.fillText('今天您退了没', pad + rpx2px(32), pad + rpx2px(110));
 
-    // 原生 App：写入缓存目录后用原生分享面板分享图片文件
-    if (Capacitor.isNativePlatform()) {
-      const base64 = dataUrl.split(",")[1] ?? "";
-      const fileResult = await Filesystem.writeFile({
-        path: filename,
-        data: base64,
-        directory: Directory.Cache,
-        recursive: true,
+  // ---- 分割线 ----
+  drawRule(ctx, pad + rpx2px(32), pad + rpx2px(140), cardW - rpx2px(64));
+
+  const { remaining } = pension;
+  const retired = remaining.totalDays <= 0;
+
+  // ---- 倒计时数字 ----
+  ctx.fillStyle = '#1c1a17';
+  ctx.font = `bold ${rpx2px(120)}px monospace`;
+  ctx.textAlign = 'left';
+  const ymText = retired ? '到点了' : `${String(remaining.years).padStart(2, '0')}年 ${String(remaining.months).padStart(2, '0')}月`;
+  ctx.fillText(ymText, pad + rpx2px(32), pad + rpx2px(280));
+
+  if (!retired) {
+    ctx.fillStyle = '#5b6b6a';
+    ctx.font = `${rpx2px(26)}px serif`;
+    ctx.fillText(`· 约 ${formatMoney(remaining.totalDays)} 天`, pad + rpx2px(32), pad + rpx2px(320));
+  }
+
+  // ---- 退休年龄信息 ----
+  ctx.fillStyle = '#5b6b6a';
+  ctx.font = `${rpx2px(26)}px serif`;
+  const ageText = `法定退休年龄 ${retirement.years} 岁${retirement.months > 0 ? ` ${retirement.months} 个月` : ''}`;
+  ctx.fillText(ageText, pad + rpx2px(32), pad + rpx2px(380));
+
+  if (retirement.delayed) {
+    ctx.fillStyle = '#c8893b';
+    ctx.fillText(`（延迟 ${retirement.delayedMonths} 个月）`, pad + rpx2px(32) + rpx2px(360), pad + rpx2px(380));
+  }
+
+  // ---- 进度环（简化为进度条） ----
+  const barY = pad + rpx2px(440);
+  const barW = cardW - rpx2px(64);
+  ctx.fillStyle = '#e2d9c3';
+  roundRect(ctx, pad + rpx2px(32), barY, barW, rpx2px(12), rpx2px(6));
+  ctx.fill();
+  ctx.fillStyle = '#b23a2e';
+  roundRect(ctx, pad + rpx2px(32), barY, barW * careerProgress, rpx2px(12), rpx2px(6));
+  ctx.fill();
+
+  ctx.fillStyle = '#1c1a17';
+  ctx.font = `bold ${rpx2px(36)}px monospace`;
+  ctx.fillText(`${(careerProgress * 100).toFixed(0)}%`, pad + rpx2px(32), barY + rpx2px(56));
+  ctx.fillStyle = '#5b6b6a';
+  ctx.font = `${rpx2px(24)}px serif`;
+  ctx.fillText('职业生涯', pad + rpx2px(120), barY + rpx2px(56));
+
+  // ---- 养老金 ----
+  drawRule(ctx, pad + rpx2px(32), barY + rpx2px(90), cardW - rpx2px(64));
+
+  ctx.fillStyle = '#5b6b6a';
+  ctx.font = `${rpx2px(22)}px monospace`;
+  ctx.fillText('预计养老金 · PENSION', pad + rpx2px(32), barY + rpx2px(130));
+
+  ctx.fillStyle = '#b23a2e';
+  ctx.font = `bold ${rpx2px(72)}px monospace`;
+  ctx.fillText(`${formatMoney(pension.totalMonthly)}`, pad + rpx2px(32), barY + rpx2px(195));
+
+  ctx.fillStyle = '#5b6b6a';
+  ctx.font = `${rpx2px(26)}px serif`;
+  ctx.fillText(`元/月 · 替代率 ${(pension.replacementRate * 100).toFixed(1)}%`, pad + rpx2px(32), barY + rpx2px(230));
+
+  // ---- 底部 ----
+  ctx.fillStyle = '#8a9796';
+  ctx.font = `${rpx2px(20)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText(`退了没 · 连续打卡 ${streak} 天 · 结果仅供参考`, W / 2, H - pad - rpx2px(16));
+
+  ctx.textAlign = 'left';
+}
+
+/** 导出 Canvas 为临时图片并保存到相册 */
+export async function saveCanvasToAlbum(canvas: HTMLCanvasElement): Promise<boolean> {
+  return new Promise((resolve) => {
+    const query = Taro.createSelectorQuery();
+    query.select('#shareCanvas').fields({ node: true, size: true }).exec((res) => {
+      const canvasNode = res[0]?.node;
+      if (!canvasNode) { resolve(false); return; }
+      Taro.canvasToTempFilePath({
+        canvas: canvasNode,
+        success: async (tmpRes) => {
+          try {
+            await Taro.saveImageToPhotosAlbum({ filePath: tmpRes.tempFilePath });
+            Taro.showToast({ title: '已保存到相册', icon: 'success' });
+            resolve(true);
+          } catch {
+            Taro.showToast({ title: '保存失败，请授权相册权限', icon: 'none' });
+            resolve(false);
+          }
+        },
+        fail: () => { resolve(false); },
       });
-      try {
-        await Share.share({
-          title: "退了没 · 我的退休进度",
-          text: "看看我离退休还有多久",
-          files: [fileResult.uri],
-          dialogTitle: "分享退休进度",
-        });
-        return;
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("cancel") || msg.includes("Abort")) return;
-      } finally {
-        Filesystem.deleteFile({
-          path: filename,
-          directory: Directory.Cache,
-        }).catch(() => {});
-      }
-    }
+    });
+  });
+}
 
-    // 浏览器：优先原生分享
-    const file = new File([blob], filename, { type: "image/png" });
-    if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: "退了没 · 我的退休进度",
-          text: "看看我离退休还有多久",
-        });
-        return;
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-      }
-    }
+// ---- 工具 ----
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
 
-    // 回退：触发下载
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = filename;
-    a.click();
-  } finally {
-    // 3. 移除克隆体和遮罩，原元素完全未动
-    clone.remove();
-    overlay.remove();
-  }
+function drawRule(ctx: CanvasRenderingContext2D, x: number, y: number, w: number) {
+  const grad = ctx.createLinearGradient(x, y, x + w, y);
+  grad.addColorStop(0, 'transparent');
+  grad.addColorStop(0.18, 'rgba(28,26,23,0.25)');
+  grad.addColorStop(0.82, 'rgba(28,26,23,0.25)');
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.fillRect(x, y, w, 1);
 }

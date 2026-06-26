@@ -1,0 +1,120 @@
+@import '../../styles/tokens.scss';
+
+.timeline {
+  width: 100%;
+
+  &__track {
+    position: relative;
+  }
+
+  &__track-bg {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 28rpx;
+    height: 2rpx;
+    background-color: $card-edge;
+  }
+
+  &__track-fill {
+    position: absolute;
+    left: 0;
+    top: 28rpx;
+    height: 2rpx;
+    background-color: $amber;
+    transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  &__nodes {
+    position: relative;
+    display: grid;
+    gap: 16rpx;
+  }
+
+  &__node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx;
+    text-align: center;
+  }
+
+  &__dot-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 50%;
+    border: 4rpx solid $card-edge;
+    background-color: $card;
+    transition: all 0.3s;
+    box-sizing: border-box;
+
+    &--current {
+      border-color: $amber;
+      background-color: $amber;
+    }
+
+    &--past {
+      border-color: $stamp;
+    }
+
+    &--future {
+      border-color: $card-edge;
+    }
+  }
+
+  &__dot {
+    width: 16rpx;
+    height: 16rpx;
+    border-radius: 50%;
+    background-color: $slate-soft;
+
+    &--current {
+      background-color: $paper;
+    }
+
+    &--past {
+      background-color: $stamp;
+    }
+
+    &--future {
+      background-color: $slate-soft;
+    }
+  }
+
+  &__label-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  &__label {
+    font-family: $font-display;
+    font-size: 26rpx;
+    font-weight: 600;
+    white-space: nowrap;
+    color: $slate;
+
+    &--current {
+      color: $amber;
+    }
+
+    &--past {
+      color: $ink;
+    }
+
+    &--future {
+      color: $slate;
+    }
+  }
+
+  &__date {
+    @include num;
+    margin-top: 4rpx;
+    font-size: 22rpx;
+    color: $slate;
+    white-space: nowrap;
+  }
+}

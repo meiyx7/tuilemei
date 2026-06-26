@@ -1,0 +1,53 @@
+name: 小程序构建与上传
+
+# 触发：推送到 miniprogram 分支、打 tag（v*）、手动
+on:
+  push:
+    branches: [miniprogram]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  wx-miniprogram:
+    name: 微信小程序构建与上传
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 类型检查
+        run: pnpm run check
+
+      - name: 构建微信小程序
+        run: pnpm run build:wx
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: tuilemei-weapp
+          path: dist/weapp
+          retention-days: 30
+
+      - name: 上传到微信后台
+        env:
+          WX_APPID: ${{ secrets.WX_APPID }}
+          WX_PRIVATE_KEY: ${{ secrets.WX_PRIVATE_KEY }}
+        run: |
+          if [ -z "$WX_APPID" ] || [ -z "$WX_PRIVATE_KEY" ]; then
+            echo "::warning::未配置微信 secrets (WX_APPID / WX_PRIVATE_KEY)，进入模拟上传模式"
+            MOCK_UPLOAD=true pnpm run upload:wx
+          else
+            echo "$WX_PRIVATE_KEY" > private.key
+            WX_APPID="$WX_APPID" WX_PRIVATE_KEY_PATH=./private.key pnpm run upload:wx
+            rm -f private.key
+          fi

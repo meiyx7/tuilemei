@@ -1,0 +1,55 @@
+// 退了没小程序 —— 全局样式设计 token（替代 Tailwind）
+// 颜色体系与 Web 版保持一致
+
+// ---- 颜色 ----
+$paper: #f4efe3;
+$ink: #1c1a17;
+$ink-soft: #3c3933;
+$stamp: #b23a2e;
+$stamp-deep: #8f2d23;
+$amber: #c8893b;
+$slate: #5b6b6a;
+$slate-soft: #8a9796;
+$card: #fbf8f0;
+$card-edge: #e2d9c3;
+
+// ---- 字体 ----
+$font-serif: "Songti SC", "STSong", "SimSun", serif;
+$font-mono: "SF Mono", "Menlo", "Consolas", monospace;
+$font-display: "Songti SC", "STSong", serif;
+
+// ---- 通用 mixin ----
+@mixin eyebrow {
+  font-family: $font-mono;
+  text-transform: uppercase;
+  letter-spacing: 2rpx;
+  font-size: 22rpx;
+  color: $slate;
+}
+
+@mixin num {
+  font-family: $font-mono;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -1rpx;
+}
+
+@mixin card-paper {
+  background-color: $card;
+  border: 1rpx solid $card-edge;
+  box-shadow: 0 2rpx 0 rgba(28, 26, 23, 0.04), 0 24rpx 60rpx -36rpx rgba(28, 26, 23, 0.18);
+}
+
+@mixin almanac-rule {
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    rgba(28, 26, 23, 0.25) 18%,
+    rgba(28, 26, 23, 0.25) 82%,
+    transparent
+  );
+  height: 2rpx;
+}
+
+@mixin stamp-shadow {
+  box-shadow: 0 4rpx 12rpx rgba(178, 58, 46, 0.25);
+}

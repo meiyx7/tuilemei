@@ -1,0 +1,188 @@
+@import '../../styles/tokens.scss';
+
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 6rpx;
+    border: 2rpx solid $card-edge;
+    color: $slate;
+    font-size: 36rpx;
+    line-height: 1;
+
+    &:active {
+      border-color: $ink;
+      color: $ink;
+    }
+  }
+
+  &__title-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 8rpx;
+  }
+
+  &__year {
+    @include num;
+    font-size: 32rpx;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__count {
+    font-size: 22rpx;
+    color: $slate;
+  }
+
+  &__scroll {
+    width: 100%;
+    white-space: nowrap;
+  }
+
+  &__grid-wrap {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__content {
+    display: flex;
+    gap: 8rpx;
+  }
+
+  &__weeklabels {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__weeklabel {
+    display: flex;
+    align-items: center;
+    height: 24rpx;
+
+    &-text {
+      @include eyebrow;
+      font-size: 18rpx;
+      line-height: 1;
+    }
+  }
+
+  &__week {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__cell {
+    width: 24rpx;
+    height: 24rpx;
+    border-radius: 4rpx;
+    transition: background-color 0.2s;
+
+    &--empty {
+      background-color: transparent;
+    }
+
+    &--future {
+      background-color: rgba($card-edge, 0.4);
+    }
+
+    &--none {
+      background-color: $card-edge;
+    }
+
+    &--checked {
+      background-color: $stamp;
+    }
+
+    &--selected {
+      box-shadow: 0 0 0 3rpx rgba($stamp, 0.6);
+    }
+  }
+
+  &__months {
+    display: flex;
+    padding-left: 40rpx;
+    gap: 24rpx;
+  }
+
+  &__month {
+    @include num;
+    font-size: 18rpx;
+    color: $slate-soft;
+  }
+
+  &__legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8rpx;
+
+    &-text {
+      font-size: 20rpx;
+      color: $slate-soft;
+    }
+
+    &-swatch {
+      width: 24rpx;
+      height: 24rpx;
+      border-radius: 4rpx;
+
+      &--0 {
+        background-color: $card-edge;
+      }
+      &--1 {
+        background-color: rgba($stamp, 0.4);
+      }
+      &--2 {
+        background-color: rgba($stamp, 0.7);
+      }
+      &--3 {
+        background-color: $stamp;
+      }
+    }
+  }
+
+  &__tooltip {
+    @include card-paper;
+    padding: 16rpx 24rpx;
+    border-radius: 6rpx;
+    max-width: 480rpx;
+  }
+
+  &__tooltip-date {
+    @include num;
+    font-size: 22rpx;
+    color: $slate;
+  }
+
+  &__tooltip-quote {
+    display: block;
+    margin-top: 4rpx;
+    font-family: $font-serif;
+    font-size: 24rpx;
+    font-style: italic;
+    color: $ink-soft;
+  }
+
+  &__tooltip-empty {
+    display: block;
+    margin-top: 4rpx;
+    font-size: 22rpx;
+    color: $slate-soft;
+  }
+}

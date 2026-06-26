@@ -1,0 +1,44 @@
+@import './styles/tokens.scss';
+
+page {
+  background-color: $paper;
+  background-image: radial-gradient(circle at 1rpx 1rpx, rgba(28, 26, 23, 0.04) 1rpx, transparent 0);
+  background-size: 44rpx 44rpx;
+  font-family: $font-serif;
+  color: $ink;
+  line-height: 1.6;
+}
+
+// 通用类（替代 Tailwind 语义类）
+.container {
+  padding: 0 32rpx;
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.num {
+  @include num;
+}
+
+.card-paper {
+  @include card-paper;
+}
+
+.almanac-rule {
+  @include almanac-rule;
+}
+
+.stamp-text {
+  font-family: $font-display;
+  font-weight: 600;
+  letter-spacing: 4rpx;
+}
+
+// 文本省略
+.text-ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

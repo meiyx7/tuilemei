@@ -1,0 +1,106 @@
+@import '../../styles/tokens.scss';
+
+.month-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 6rpx;
+    border: 2rpx solid $card-edge;
+    color: $slate;
+    font-size: 36rpx;
+    line-height: 1;
+
+    &:active {
+      border-color: $ink;
+      color: $ink;
+    }
+  }
+
+  &__title {
+    @include num;
+    font-size: 32rpx;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8rpx;
+  }
+
+  &__weekday {
+    @include eyebrow;
+    padding-bottom: 16rpx;
+    text-align: center;
+  }
+
+  &__cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    border-radius: 6rpx;
+    border: 2rpx solid transparent;
+
+    &--empty {
+      border-color: transparent;
+    }
+
+    &--checked {
+      border-color: rgba($stamp, 0.4);
+      background-color: rgba($stamp, 0.05);
+    }
+
+    &--today {
+      border-color: rgba($amber, 0.6);
+      background-color: rgba($amber, 0.05);
+    }
+  }
+
+  &__day {
+    @include num;
+    font-size: 26rpx;
+    color: $slate;
+
+    &--checked {
+      font-weight: 700;
+      color: $stamp;
+    }
+  }
+
+  &__stamp-ring {
+    position: absolute;
+    top: 8rpx;
+    right: 8rpx;
+    bottom: 8rpx;
+    left: 8rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+
+    &::after {
+      content: '';
+      width: 56rpx;
+      height: 56rpx;
+      border-radius: 50%;
+      border: 2rpx solid rgba($stamp, 0.7);
+      transform: rotate(-11deg);
+    }
+  }
+}

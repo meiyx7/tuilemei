@@ -1,0 +1,228 @@
+@import '../../styles/tokens.scss';
+
+.page {
+  min-height: 100vh;
+  padding-bottom: 80rpx;
+}
+
+/* 顶部操作行 */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0 8rpx;
+}
+
+.topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12rpx 28rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid $card-edge;
+  background-color: $card;
+  font-size: 26rpx;
+  color: $ink-soft;
+  transition: all 0.2s;
+
+  &:active {
+    border-color: $ink;
+    color: $ink;
+  }
+}
+
+.topbar-btn-disabled {
+  opacity: 0.5;
+}
+
+/* 章节容器 */
+.section {
+  margin-top: 48rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.section-head-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.link-more {
+  font-size: 24rpx;
+  color: $slate;
+  padding: 8rpx 0;
+  white-space: nowrap;
+
+  &:active {
+    color: $stamp;
+  }
+}
+
+/* 内联章节标题（与独立 SectionHeader 组件 BEM 命名不同） */
+.section-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12rpx;
+}
+
+.section-title {
+  font-family: $font-display;
+  font-size: 44rpx;
+  font-weight: 600;
+  color: $ink;
+  line-height: 1.25;
+  letter-spacing: 1rpx;
+}
+
+.section-rule {
+  margin-top: 4rpx;
+  width: 100%;
+}
+
+/* 内联进度轴（类名 .tl-* 与独立 Timeline 组件 BEM 命名不同） */
+.timeline {
+  width: 100%;
+  position: relative;
+  padding-top: 8rpx;
+}
+
+.tl-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 28rpx;
+  height: 2rpx;
+  background-color: $card-edge;
+}
+
+.tl-progress {
+  position: absolute;
+  left: 0;
+  top: 28rpx;
+  height: 2rpx;
+  background-color: $amber;
+  transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.tl-grid {
+  position: relative;
+  display: grid;
+  gap: 16rpx;
+}
+
+.tl-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  text-align: center;
+}
+
+.tl-dot-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  border: 4rpx solid $card-edge;
+  background-color: $card;
+  box-sizing: border-box;
+  transition: all 0.3s;
+}
+
+.tl-dot-current {
+  border-color: $amber;
+  background-color: $amber;
+}
+
+.tl-dot-past {
+  border-color: $stamp;
+}
+
+.tl-dot-future {
+  border-color: $card-edge;
+}
+
+.tl-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background-color: $slate-soft;
+}
+
+.tl-dot-in-current {
+  background-color: $paper;
+}
+
+.tl-dot-in-past {
+  background-color: $stamp;
+}
+
+.tl-dot-in-future {
+  background-color: $slate-soft;
+}
+
+.tl-label {
+  font-family: $font-display;
+  font-size: 26rpx;
+  font-weight: 600;
+  white-space: nowrap;
+  color: $slate;
+}
+
+.tl-label-current {
+  color: $amber;
+}
+
+.tl-label-past {
+  color: $ink;
+}
+
+.tl-label-future {
+  color: $slate;
+}
+
+.tl-date {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: $slate;
+  white-space: nowrap;
+}
+
+/* 底部声明 */
+.footer {
+  margin-top: 64rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.footer-text {
+  font-size: 22rpx;
+  line-height: 1.7;
+  color: $slate;
+}
+
+.footer-warn {
+  color: $stamp;
+}
+
+.footer-version {
+  @include num;
+  font-size: 20rpx;
+  color: $slate-soft;
+}
+
+/* 隐藏的分享 Canvas（离屏绘制） */
+.share-canvas {
+  position: fixed;
+  left: -9999rpx;
+  top: -9999rpx;
+  width: 680rpx;
+  height: 860rpx;
+}

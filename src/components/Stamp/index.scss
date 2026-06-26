@@ -1,0 +1,101 @@
+@import '../../styles/tokens.scss';
+
+.stamp {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 4rpx solid $stamp;
+  color: $stamp;
+  background-color: transparent;
+  box-shadow: inset 0 0 0 2rpx rgba(178, 58, 46, 0.35);
+  transform: rotate(-6deg);
+  user-select: none;
+
+  &--sm {
+    width: 128rpx;
+    height: 128rpx;
+
+    .stamp__label {
+      font-size: 22rpx;
+    }
+    .stamp__sub {
+      font-size: 18rpx;
+    }
+  }
+
+  &--md {
+    width: 192rpx;
+    height: 192rpx;
+
+    .stamp__label {
+      font-size: 28rpx;
+    }
+    .stamp__sub {
+      font-size: 20rpx;
+    }
+  }
+
+  &--lg {
+    width: 256rpx;
+    height: 256rpx;
+
+    .stamp__label {
+      font-size: 36rpx;
+    }
+    .stamp__sub {
+      font-size: 22rpx;
+    }
+  }
+
+  &--animate {
+    animation: stampDown 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  &__inner-ring {
+    position: absolute;
+    top: 10rpx;
+    right: 10rpx;
+    bottom: 10rpx;
+    left: 10rpx;
+    border-radius: 50%;
+    border: 2rpx solid rgba($stamp, 0.6);
+  }
+
+  &__content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+  }
+
+  &__label {
+    font-family: $font-display;
+    font-weight: 600;
+    letter-spacing: 8rpx;
+  }
+
+  &__sub {
+    @include num;
+    margin-top: 8rpx;
+    opacity: 0.8;
+  }
+}
+
+@keyframes stampDown {
+  0% {
+    transform: rotate(-25deg) scale(1.6);
+    opacity: 0;
+  }
+  60% {
+    transform: rotate(-2deg) scale(0.92);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-6deg) scale(1);
+    opacity: 1;
+  }
+}

@@ -1,0 +1,113 @@
+@import '../../styles/tokens.scss';
+
+.um-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background-color: rgba(28, 26, 23, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+}
+
+.um-card {
+  @include card-paper;
+  position: relative;
+  width: 100%;
+  max-width: 560rpx;
+  padding: 40rpx;
+  border-radius: 6rpx;
+}
+
+.um-close {
+  position: absolute;
+  top: 24rpx;
+  right: 24rpx;
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4rpx;
+  color: $slate;
+  font-size: 32rpx;
+}
+
+.um-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  margin-bottom: 28rpx;
+  padding-right: 64rpx;
+}
+.um-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.um-spark {
+  color: $amber;
+  font-size: 36rpx;
+}
+.um-title {
+  font-family: $font-display;
+  font-size: 40rpx;
+  font-weight: 600;
+  color: $ink;
+}
+.um-version {
+  font-size: 24rpx;
+  color: $slate;
+}
+.um-version-strong {
+  font-weight: 600;
+  color: $ink;
+}
+.um-version-sep {
+  color: $slate-soft;
+  margin: 0 8rpx;
+}
+
+.um-notes {
+  max-height: 320rpx;
+  border: 1rpx solid rgba(226, 217, 195, 0.6);
+  border-radius: 4rpx;
+  padding: 24rpx;
+  margin-bottom: 28rpx;
+}
+.um-notes-text {
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: $ink-soft;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.um-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  border-radius: 4rpx;
+  padding: 18rpx 32rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  border: 1rpx solid transparent;
+}
+.btn-stamp {
+  background-color: $stamp;
+  border-color: $stamp;
+  color: $paper;
+}
+.btn-stamp:active {
+  background-color: $stamp-deep;
+}

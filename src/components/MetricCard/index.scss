@@ -1,0 +1,57 @@
+@import '../../styles/tokens.scss';
+
+.metric-card {
+  @include card-paper;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 40rpx;
+
+  &__eyebrow {
+    @include eyebrow;
+  }
+
+  &__value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12rpx;
+  }
+
+  &__value {
+    @include num;
+    font-size: 60rpx;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  &--ink .metric-card__value {
+    color: $ink;
+  }
+  &--amber .metric-card__value {
+    color: $amber;
+  }
+  &--stamp .metric-card__value {
+    color: $stamp;
+  }
+  &--slate .metric-card__value {
+    color: $slate;
+  }
+
+  &__unit {
+    font-size: 26rpx;
+    color: $slate;
+  }
+
+  &__hint {
+    font-size: 22rpx;
+    color: $slate;
+    line-height: 1.6;
+  }
+
+  &__rule {
+    @include almanac-rule;
+    margin-top: auto;
+    width: 100%;
+  }
+}

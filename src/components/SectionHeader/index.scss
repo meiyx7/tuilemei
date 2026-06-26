@@ -1,0 +1,40 @@
+@import '../../styles/tokens.scss';
+
+.section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  align-items: flex-start;
+
+  &--center {
+    align-items: center;
+    text-align: center;
+  }
+
+  &__eyebrow {
+    @include eyebrow;
+  }
+
+  &__title {
+    font-family: $font-display;
+    font-size: 48rpx;
+    font-weight: 600;
+    color: $ink;
+    line-height: 1.25;
+    letter-spacing: 1rpx;
+  }
+
+  &__desc {
+    max-width: 560rpx;
+    font-size: 26rpx;
+    color: $slate;
+    line-height: 1.6;
+  }
+
+  &__rule {
+    @include almanac-rule;
+    margin-top: 8rpx;
+    width: 100%;
+    max-width: 320rpx;
+  }
+}

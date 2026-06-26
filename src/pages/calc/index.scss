@@ -1,0 +1,234 @@
+@import '../../styles/tokens.scss';
+
+.page {
+  min-height: 100vh;
+  padding-bottom: 80rpx;
+}
+
+/* 顶部操作行（与 dashboard 一致） */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0 8rpx;
+}
+
+.topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12rpx 28rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid $card-edge;
+  background-color: $card;
+  font-size: 26rpx;
+  color: $ink-soft;
+  transition: all 0.2s;
+
+  &:active {
+    border-color: $ink;
+    color: $ink;
+  }
+}
+
+/* 章节容器 */
+.section {
+  margin-top: 48rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+/* 总额卡 */
+.total-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 48rpx 40rpx;
+  border-radius: 8rpx;
+}
+
+.total-eyebrow {
+  @include eyebrow;
+}
+
+.total-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+}
+
+.total-value {
+  font-size: 88rpx;
+  font-weight: 700;
+  color: $stamp;
+  line-height: 1;
+}
+
+.total-unit {
+  font-size: 30rpx;
+  color: $slate;
+}
+
+.total-rule {
+  margin: 8rpx 0;
+}
+
+.total-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.meta-label {
+  font-size: 26rpx;
+  color: $slate;
+}
+
+.meta-value {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: $ink;
+}
+
+/* 指标卡网格 */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24rpx;
+}
+
+.metric-grid .metric-card {
+  padding: 32rpx;
+}
+
+.card-extra {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: $amber;
+}
+
+/* 测算明细账本 */
+.ledger {
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+  padding: 40rpx;
+  border-radius: 8rpx;
+}
+
+.ledger-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.ledger-label-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  flex: 1;
+}
+
+.ledger-label {
+  font-size: 28rpx;
+  color: $ink-soft;
+  font-weight: 500;
+}
+
+.ledger-label--strong {
+  font-family: $font-display;
+  font-size: 30rpx;
+  color: $ink;
+  font-weight: 700;
+}
+
+.ledger-formula {
+  font-size: 20rpx;
+  color: $slate-soft;
+  line-height: 1.5;
+}
+
+.ledger-value {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: $ink;
+  white-space: nowrap;
+}
+
+.ledger-divider {
+  margin: 4rpx 0;
+}
+
+.ledger-row--total {
+  align-items: baseline;
+}
+
+.ledger-value--total {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: $stamp;
+}
+
+/* 参数表 */
+.params {
+  display: flex;
+  flex-direction: column;
+  padding: 12rpx 40rpx;
+  border-radius: 8rpx;
+}
+
+.param-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 24rpx 0;
+  border-bottom: 2rpx solid rgba($card-edge, 0.6);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.param-k {
+  font-size: 26rpx;
+  color: $slate;
+}
+
+.param-v {
+  font-size: 26rpx;
+  color: $ink;
+  text-align: right;
+}
+
+.param-tip {
+  margin-top: 8rpx;
+  align-self: flex-end;
+  padding: 12rpx 24rpx;
+  font-size: 24rpx;
+  color: $stamp;
+
+  &:active {
+    opacity: 0.6;
+  }
+}
+
+/* 底部声明 */
+.footer {
+  margin-top: 64rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.footer-text {
+  font-size: 22rpx;
+  line-height: 1.7;
+  color: $slate;
+}
+
+.footer-warn {
+  color: $stamp;
+}

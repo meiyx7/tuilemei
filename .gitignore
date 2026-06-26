@@ -1,38 +1,8 @@
-# Dependencies
 node_modules/
-.pnpm-store/
-
-# Build output
 dist/
-dist-ssr/
-*.local
-
-# Capacitor native projects (generated locally)
-/android/
-/ios/
-
-# Logs
+.taro-cache/
+.pnpm-store/
+private.key
 *.log
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Editor / OS
 .DS_Store
-.idea/
-.vscode/*
-!.vscode/extensions.json
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Env
-.env
-.env.*
-!.env.example
-
-# Trae IDE internal (keep documents)
-.trae/.cache/
+.swc/

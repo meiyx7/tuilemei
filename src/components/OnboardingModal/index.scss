@@ -1,0 +1,248 @@
+@import '../../styles/tokens.scss';
+
+.ob-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  background-color: rgba(28, 26, 23, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+}
+
+.ob-card {
+  @include card-paper;
+  position: relative;
+  width: 100%;
+  max-width: 600rpx;
+  max-height: 90vh;
+  padding: 40rpx;
+  display: flex;
+  flex-direction: column;
+  border-radius: 6rpx;
+}
+
+/* 步骤指示器 */
+.ob-steps {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 32rpx;
+}
+.ob-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.ob-step-bar {
+  height: 4rpx;
+  border-radius: 999rpx;
+  background-color: $card-edge;
+}
+.ob-step-bar-active {
+  background-color: $stamp;
+}
+.ob-step-label {
+  @include num;
+  font-size: 20rpx;
+}
+.ob-step-label-current {
+  color: $ink;
+}
+.ob-step-label-done {
+  color: $slate;
+}
+.ob-step-label-todo {
+  color: rgba(138, 151, 150, 0.6);
+}
+
+.ob-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.ob-section {
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+}
+
+.step-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.step-title {
+  font-family: $font-display;
+  font-size: 40rpx;
+  font-weight: 600;
+  color: $ink;
+}
+.step-desc {
+  font-size: 24rpx;
+  color: $slate;
+}
+
+/* 欢迎页文本 */
+.welcome-text {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+.welcome-p {
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: $slate;
+}
+.welcome-em {
+  color: $ink;
+  font-weight: 500;
+}
+.welcome-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  border-left: 4rpx solid rgba(178, 58, 46, 0.4);
+  padding-left: 24rpx;
+}
+.welcome-li {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: $slate;
+}
+
+/* 表单 */
+.ob-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+}
+.ob-col-span {
+  grid-column: 1 / span 2;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.field-label {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: $ink-soft;
+}
+.field-hint {
+  font-size: 20rpx;
+  color: $slate-soft;
+}
+
+.picker-display {
+  width: 100%;
+  border: 1rpx solid $card-edge;
+  background-color: rgba(244, 239, 227, 0.6);
+  border-radius: 4rpx;
+  padding: 18rpx 20rpx;
+  font-size: 26rpx;
+  color: $ink;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44rpx;
+}
+.picker-flex {
+  flex: 1;
+}
+.picker-arrow {
+  color: $slate;
+  font-size: 28rpx;
+  margin-left: 12rpx;
+}
+
+.num-input {
+  width: 100%;
+  border: 1rpx solid $card-edge;
+  background-color: rgba(244, 239, 227, 0.6);
+  border-radius: 4rpx;
+  padding: 18rpx 20rpx;
+  font-size: 26rpx;
+  color: $ink;
+  font-family: $font-mono;
+  min-height: 44rpx;
+  box-sizing: border-box;
+}
+
+.province-row {
+  display: flex;
+  gap: 12rpx;
+  align-items: stretch;
+}
+.locate-btn {
+  flex-shrink: 0;
+  width: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1rpx solid $card-edge;
+  border-radius: 4rpx;
+  color: $slate;
+  font-size: 32rpx;
+}
+.locate-btn.locating {
+  opacity: 0.5;
+}
+
+.ob-note {
+  font-size: 22rpx;
+  color: $slate-soft;
+}
+
+/* 底部操作区 */
+.ob-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 32rpx;
+}
+.ob-skip {
+  font-size: 22rpx;
+  color: $slate;
+}
+.ob-actions {
+  display: flex;
+  gap: 12rpx;
+  align-items: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  border-radius: 4rpx;
+  padding: 18rpx 32rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  border: 1rpx solid transparent;
+}
+.btn-stamp {
+  background-color: $stamp;
+  border-color: $stamp;
+  color: $paper;
+}
+.btn-stamp:active {
+  background-color: $stamp-deep;
+}
+.btn-ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: $ink-soft;
+}
+.btn-ghost:active {
+  background-color: rgba(28, 26, 23, 0.05);
+}

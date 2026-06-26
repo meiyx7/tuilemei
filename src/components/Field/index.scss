@@ -1,0 +1,53 @@
+@import '../../styles/tokens.scss';
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+
+  &__label {
+    font-family: $font-serif;
+    font-size: 28rpx;
+    font-weight: 500;
+    color: $ink-soft;
+  }
+
+  &__hint {
+    font-size: 22rpx;
+    color: $slate-soft;
+  }
+
+  &__input {
+    width: 100%;
+    border-radius: 6rpx;
+    border: 2rpx solid $card-edge;
+    background-color: rgba($paper, 0.6);
+    padding: 20rpx 24rpx;
+    font-family: $font-serif;
+    font-size: 30rpx;
+    color: $ink;
+    box-sizing: border-box;
+    line-height: 1.4;
+  }
+
+  &__placeholder {
+    color: $slate-soft;
+  }
+
+  &__select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    &-text {
+      flex: 1;
+    }
+
+    &-arrow {
+      margin-left: 12rpx;
+      color: $slate;
+      font-size: 32rpx;
+      line-height: 1;
+    }
+  }
+}

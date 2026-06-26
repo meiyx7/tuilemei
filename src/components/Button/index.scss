@@ -1,0 +1,51 @@
+@import '../../styles/tokens.scss';
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  border-radius: 6rpx;
+  border: 2rpx solid transparent;
+  padding: 20rpx 32rpx;
+  font-family: $font-serif;
+  font-size: 28rpx;
+  font-weight: 500;
+  letter-spacing: 1rpx;
+  line-height: 1.2;
+  transition: all 0.15s ease;
+
+  &:active {
+    transform: translateY(2rpx);
+  }
+
+  &--stamp {
+    background-color: $stamp;
+    color: $paper;
+    border-color: $stamp;
+    @include stamp-shadow;
+  }
+
+  &--amber {
+    background-color: $amber;
+    color: $paper;
+    border-color: $amber;
+  }
+
+  &--outline {
+    background-color: transparent;
+    color: $ink;
+    border-color: rgba($ink, 0.3);
+  }
+
+  &--ghost {
+    background-color: transparent;
+    color: $ink-soft;
+    border-color: transparent;
+  }
+
+  &--disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
