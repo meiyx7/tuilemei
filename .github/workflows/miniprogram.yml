@@ -46,7 +46,7 @@ jobs:
         run: |
           if [ -z "$WX_APPID" ]; then
             echo "::warning::未配置 WX_APPID，进入模拟上传模式"
-            MOCK_UPLOAD=true pnpm run upload:wx
+            MOCK_UPLOAD=true node scripts/upload-wx.mjs
             exit 0
           fi
 
@@ -54,22 +54,36 @@ jobs:
           if [ -n "$WX_PRIVATE_KEY_BASE64" ]; then
             echo "$WX_PRIVATE_KEY_BASE64" | base64 -d > private.key
           elif [ -n "$WX_PRIVATE_KEY" ]; then
-            # 回退：明文私钥，用 printf 避免末尾多余换行
             printf '%s\n' "$WX_PRIVATE_KEY" > private.key
           else
-            echo "::warning::未配置微信私钥 (WX_PRIVATE_KEY_BASE64 或 WX_PRIVATE_KEY)，进入模拟上传模式"
-            MOCK_UPLOAD=true pnpm run upload:wx
+            echo "::warning::未配置微信私钥，进入模拟上传模式"
+            MOCK_UPLOAD=true node scripts/upload-wx.mjs
             exit 0
           fi
 
-          # 诊断信息：检查私钥是否为合法 PEM（含 BEGIN/END 标记与多行）
+          # 诊断信息：检查私钥是否为合法 PEM
           echo "私钥行数：$(wc -l < private.key)"
           head -1 private.key
           if ! grep -q "BEGIN" private.key; then
-            echo "::error::私钥文件缺少 BEGIN 标记，格式不正确。请用 base64 编码后存为 WX_PRIVATE_KEY_BASE64"
+            echo "::error::私钥文件缺少 BEGIN 标记，请用 base64 编码后存为 WX_PRIVATE_KEY_BASE64"
             rm -f private.key
             exit 1
           fi
 
-          WX_APPID="$WX_APPID" WX_PRIVATE_KEY_PATH=./private.key pnpm run upload:wx
-          rm -f private.key
+          # miniprogram-ci 依赖 @babel/preset-env/browserslist/less 等，
+          # 在 pnpm 严格隔离结构下深路径 require 会失败。
+          # 用独立目录 + npm install 搭建扁平 node_modules，彻底规避该问题。
+          mkdir -p .ci-upload
+          cp scripts/upload-wx.mjs .ci-upload/
+          cd .ci-upload
+          npm init -y >/dev/null
+          npm install miniprogram-ci@1.9.27 >/dev/null 2>&1
+          echo "miniprogram-ci 安装完成: $(ls node_modules/miniprogram-ci/package.json && echo OK)"
+
+          WX_APPID="$WX_APPID" \
+          WX_PRIVATE_KEY_PATH=../private.key \
+          WX_PROJECT_PATH=../dist/weapp \
+          WX_VERSION="$(node -p "require('../package.json').version")" \
+          node upload-wx.mjs
+          cd ..
+          rm -rf .ci-upload private.key

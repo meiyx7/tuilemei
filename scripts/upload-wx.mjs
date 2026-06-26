@@ -13,11 +13,14 @@ import ci from 'miniprogram-ci';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
-const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf-8'));
+let pkg = { version: '0.0.0' };
+try { pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf-8')); } catch {}
 
 const APPID = process.env.WX_APPID || 'wx0000000000000000';
-const VERSION = pkg.version || '0.0.1';
-const PROJECT_PATH = resolve(root, 'dist/weapp');
+const VERSION = process.env.WX_VERSION || pkg.version || '0.0.1';
+const PROJECT_PATH = process.env.WX_PROJECT_PATH
+  ? resolve(process.env.WX_PROJECT_PATH)
+  : resolve(root, 'dist/weapp');
 const PRIVATE_KEY_PATH = process.env.WX_PRIVATE_KEY_PATH || resolve(root, 'private.key');
 const MOCK = process.env.MOCK_UPLOAD === 'true' || !APPID.startsWith('wx') || APPID === 'wx0000000000000000';
 
