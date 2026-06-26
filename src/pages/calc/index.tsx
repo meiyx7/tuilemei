@@ -44,9 +44,7 @@ export default function Calc() {
       <TopTab
         current="calc"
         extra={
-          <View className="toptab-btn" onClick={() => setProfileOpen(true)}>
-            <Text>调整参数</Text>
-          </View>
+          <View className="toptab-btn toptab-btn-icon-settings" onClick={() => setProfileOpen(true)} />
         }
       />
 

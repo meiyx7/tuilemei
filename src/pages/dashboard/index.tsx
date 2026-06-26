@@ -80,12 +80,8 @@ export default function Dashboard() {
         current="dashboard"
         extra={
           <>
-            <View className="toptab-btn" onClick={() => setProfileOpen(true)}>
-              <Text>设置</Text>
-            </View>
-            <View className={cn('toptab-btn', sharing && 'toptab-btn-disabled')} onClick={handleShare}>
-              <Text>{sharing ? '◌' : '↗'}</Text>
-            </View>
+            <View className="toptab-btn toptab-btn-icon-settings" onClick={() => setProfileOpen(true)} />
+            <View className={cn('toptab-btn toptab-btn-icon-share', sharing && 'toptab-btn-disabled')} onClick={handleShare} />
           </>
         }
       />

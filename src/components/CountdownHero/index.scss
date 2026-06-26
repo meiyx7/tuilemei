@@ -79,6 +79,17 @@
   justify-content: center;
   gap: 4rpx;
 }
+/* 圆环内多行文字：固定宽度内左对齐，整体居中，
+   避免文字长短不一时居中导致左右边界不齐 */
+.ring-mask .eyebrow,
+.ring-mask .ring-pct,
+.ring-mask .ring-sub,
+.ring-mask .ring-badge {
+  width: 200rpx;
+  text-align: left;
+  padding-left: 24rpx;
+  box-sizing: border-box;
+}
 .ring-pct {
   @include num;
   font-size: 72rpx;

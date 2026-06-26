@@ -55,23 +55,33 @@
   }
 }
 
-/* extra 按钮样式（复用 topbar-btn 风格） */
+/* extra 按钮样式：纯图标按钮（SVG background） */
 .toptab-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8rpx 20rpx;
-  font-size: 26rpx;
-  color: $slate;
+  width: 60rpx;
+  height: 60rpx;
   border: 1rpx solid rgba($card-edge, 0.8);
-  border-radius: 999rpx;
+  border-radius: 50%;
   background-color: rgba(255, 255, 255, 0.4);
-  white-space: nowrap;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 32rpx 32rpx;
 
   &:active {
     background-color: rgba($stamp, 0.08);
-    color: $stamp;
   }
+}
+
+/* 设置图标：滑块（三条横线带圆点） */
+.toptab-btn-icon-settings {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM1YjZiNmEiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48bGluZSB4MT0iNCIgeTE9IjYiIHgyPSIyMCIgeTI9IjYiLz48bGluZSB4MT0iNCIgeTE9IjEyIiB4Mj0iMjAiIHkyPSIxMiIvPjxsaW5lIHgxPSI0IiB5MT0iMTgiIHgyPSIyMCIgeTI9IjE4Ii8+PGNpcmNsZSBjeD0iMTQiIGN5PSI2IiByPSIzIiBmaWxsPSIjZmJmOGYwIi8+PGNpcmNsZSBjeD0iOCIgY3k9IjEyIiByPSIzIiBmaWxsPSIjZmJmOGYwIi8+PGNpcmNsZSBjeD0iMTYiIGN5PSIxOCIgcj0iMyIgZmlsbD0iI2ZiZjhmMCIvPjwvc3ZnPg==");
+}
+
+/* 分享图标：上传箭头从方框出来 */
+.toptab-btn-icon-share {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM1YjZiNmEiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTIgM3YxMyIvPjxwYXRoIGQ9Ik03IDhsNS01IDUgNSIvPjxwYXRoIGQ9Ik01IDE0djVhMiAyIDAgMCAwMiAyaDEwYTIgMiAwIDAwMi0ydi01Ii8+PC9zdmc+");
 }
 
 .toptab-btn-disabled {

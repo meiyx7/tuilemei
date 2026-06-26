@@ -218,11 +218,13 @@
   color: $slate-soft;
 }
 
-/* 隐藏的分享 Canvas（离屏绘制） */
+/* 隐藏的分享 Canvas（离屏绘制）
+   CSS 尺寸必须与 drawShareCard 中设置的 canvas.width/height 一致，
+   否则底部内容会被 CSS 裁剪 */
 .share-canvas {
   position: fixed;
   left: -9999rpx;
   top: -9999rpx;
   width: 680rpx;
-  height: 860rpx;
+  height: 1280rpx;
 }
