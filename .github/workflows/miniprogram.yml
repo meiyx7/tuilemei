@@ -73,9 +73,9 @@ jobs:
           # miniprogram-ci 依赖 @babel/preset-env/browserslist/less 等，
           # 在 pnpm 严格隔离结构下深路径 require 会失败。
           # 用独立目录 + npm install 搭建扁平 node_modules，彻底规避该问题。
-          mkdir -p .ci-upload
-          cp scripts/upload-wx.mjs .ci-upload/
-          cd .ci-upload
+          mkdir -p ci-upload
+          cp scripts/upload-wx.mjs ci-upload/
+          cd ci-upload
           npm init -y >/dev/null
           npm install miniprogram-ci@1.9.27 >/dev/null 2>&1
           echo "miniprogram-ci 安装完成: $(ls node_modules/miniprogram-ci/package.json && echo OK)"
@@ -86,4 +86,4 @@ jobs:
           WX_VERSION="$(node -p "require('../package.json').version")" \
           node upload-wx.mjs
           cd ..
-          rm -rf .ci-upload private.key
+          rm -rf ci-upload private.key
