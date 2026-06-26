@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { View, Text } from '@tarojs/components';
-import Taro from '@tarojs/taro';
 import { cn } from '@/lib/utils';
 import { useStore } from '@/store/useStore';
 import {
@@ -15,6 +14,7 @@ import SectionHeader from '@/components/SectionHeader';
 import MetricCard from '@/components/MetricCard';
 import StackedBar from '@/components/StackedBar';
 import ProfileModal from '@/components/ProfileModal';
+import TopTab from '@/components/TopTab';
 import './index.scss';
 
 const GENDER_TEXT: Record<string, string> = { male: '男', female: '女' };
@@ -32,8 +32,6 @@ export default function Calc() {
 
   const [profileOpen, setProfileOpen] = useState(false);
 
-  const goDashboard = () => Taro.switchTab({ url: '/pages/dashboard/index' });
-
   const segments = [
     { label: '基础养老金', value: pension.basicPension, color: COLOR_BASIC },
     { label: '个人账户养老金', value: pension.personalAccountPension, color: COLOR_PERSONAL },
@@ -42,11 +40,11 @@ export default function Calc() {
 
   return (
     <View className="page container">
+      {/* 顶部 Tab 导航 */}
+      <TopTab current="calc" />
+
       {/* 顶部操作行 */}
       <View className="topbar">
-        <View className="topbar-btn" onClick={goDashboard}>
-          <Text>‹ 返回</Text>
-        </View>
         <View className="topbar-btn" onClick={() => setProfileOpen(true)}>
           <Text>调整参数</Text>
         </View>

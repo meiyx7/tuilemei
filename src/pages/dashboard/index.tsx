@@ -14,6 +14,7 @@ import { APP_VERSION, BUILD_TIME } from '@/lib/updater';
 import CountdownHero from '@/components/CountdownHero';
 import ProfileModal from '@/components/ProfileModal';
 import OnboardingModal from '@/components/OnboardingModal';
+import TopTab from '@/components/TopTab';
 import './index.scss';
 
 export default function Dashboard() {
@@ -68,11 +69,14 @@ export default function Dashboard() {
   };
 
   const goCalc = () => {
-    Taro.switchTab({ url: '/pages/calc/index' });
+    Taro.reLaunch({ url: '/pages/calc/index' });
   };
 
   return (
     <View className="page container">
+      {/* 顶部 Tab 导航 */}
+      <TopTab current="dashboard" />
+
       {/* 顶部操作行 */}
       <View className="topbar">
         <View className="topbar-btn" onClick={() => setProfileOpen(true)}>

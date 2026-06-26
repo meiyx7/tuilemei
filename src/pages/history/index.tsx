@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { View, Text } from '@tarojs/components';
-import Taro from '@tarojs/taro';
 import { cn } from '@/lib/utils';
 import { useStore } from '@/store/useStore';
 import { todayYm } from '@/lib/pension';
@@ -8,6 +7,7 @@ import SectionHeader from '@/components/SectionHeader';
 import MetricCard from '@/components/MetricCard';
 import MonthCalendar from '@/components/MonthCalendar';
 import Heatmap from '@/components/Heatmap';
+import TopTab from '@/components/TopTab';
 import './index.scss';
 
 type ViewMode = 'month' | 'heatmap';
@@ -17,8 +17,6 @@ export default function History() {
   const changelog = useStore((s) => s.changelog);
   const streak = useStore((s) => s.streak());
   const totalCheckins = useStore((s) => s.totalCheckins());
-
-  const goDashboard = () => Taro.switchTab({ url: '/pages/dashboard/index' });
 
   // 月历状态
   const nowYm = todayYm();
@@ -70,12 +68,8 @@ export default function History() {
 
   return (
     <View className="page container">
-      {/* 顶部操作行 */}
-      <View className="topbar">
-        <View className="topbar-btn" onClick={goDashboard}>
-          <Text>‹ 返回</Text>
-        </View>
-      </View>
+      {/* 顶部 Tab 导航 */}
+      <TopTab current="history" />
 
       {/* 打卡概览 */}
       <View className="section">

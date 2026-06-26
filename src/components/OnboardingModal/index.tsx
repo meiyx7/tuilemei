@@ -35,14 +35,25 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
   const [draft, setDraft] = useState<ProfileType>(profile);
   const [locating, setLocating] = useState(false);
   const [locateHint, setLocateHint] = useState<string | null>(null);
+  // 记录是否已尝试过自动定位，避免重复触发
+  const [autoLocated, setAutoLocated] = useState(false);
 
   useEffect(() => {
     if (open) {
       setStep(1);
       setDraft(profile);
       setLocateHint(null);
+      setAutoLocated(false);
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 进入「基础信息」步骤时自动尝试定位一次（仅一次）
+  useEffect(() => {
+    if (open && step === 2 && !autoLocated && !locating) {
+      setAutoLocated(true);
+      handleLocate();
+    }
+  }, [open, step, autoLocated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = <K extends keyof ProfileType>(key: K, value: ProfileType[K]) => {
     setDraft((d) => ({ ...d, [key]: value }));
