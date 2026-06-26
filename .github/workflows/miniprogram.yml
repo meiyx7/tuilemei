@@ -77,16 +77,18 @@ jobs:
           cp scripts/upload-wx.mjs ci-upload/
           cd ci-upload
           npm init -y >/dev/null
-          # miniprogram-ci 1.9.x 用 require('less/lib/less') 深路径，但未声明 less 为依赖，
-          # 且其内部模块解析路径为 node_modules/miniprogram-ci/node_modules/less。
-          # 装好 less 后建立符号链接，让该深路径可达。
+          # miniprogram-ci@1.9.27 自带 less@4.6.7（在 miniprogram-ci/node_modules/less/），
+          # 4.6.7 的 package.json 带有 exports 字段，Node 22 严格执行后 require('less/lib/less')
+          # 这类深路径被拦截（Node 24 较宽松所以本地复现不出来）。
+          # 用 less@3.13.1（无 exports 限制）替换 4.6.7，保证深路径可达。
           npm install miniprogram-ci@1.9.27 less@3.13.1 >/dev/null 2>&1
-          mkdir -p node_modules/miniprogram-ci/node_modules
+          rm -rf node_modules/miniprogram-ci/node_modules/less
           ln -s ../../less node_modules/miniprogram-ci/node_modules/less
           echo "miniprogram-ci 安装完成: $(ls node_modules/miniprogram-ci/package.json && echo OK)"
-          echo "less 版本: $(node -p "require('less/package.json').version")"
-          echo "less/lib/less 存在: $(test -d node_modules/less/lib/less && echo YES || echo NO)"
-          echo "miniprogram-ci 内 less 链接: $(test -d node_modules/miniprogram-ci/node_modules/less/lib/less && echo YES || echo NO)"
+          echo "顶层 less 版本: $(node -p "require('less/package.json').version")"
+          echo "miniprogram-ci 内 less 版本: $(node -p "require('node_modules/miniprogram-ci/node_modules/less/package.json').version")"
+          echo "miniprogram-ci 内 lib/less/index.js: $(test -f node_modules/miniprogram-ci/node_modules/less/lib/less/index.js && echo YES || echo NO)"
+          echo "从 miniprogram-ci/dist 内 require('less/lib/less'): $(cd node_modules/miniprogram-ci/dist && node -e "try{require('less/lib/less');console.log('OK');}catch(e){console.log('FAIL:',e.message)}")"
 
           WX_APPID="$WX_APPID" \
           WX_PRIVATE_KEY_PATH=../private.key \
