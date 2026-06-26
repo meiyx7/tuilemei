@@ -176,15 +176,15 @@
     opacity: 0;
   }
   30% {
-    transform: translate(-50%, -50%) scale(1.15) rotate(var(--rot));
+    transform: translate(calc(-50% + var(--to-x)), calc(-50% + var(--to-y))) scale(1.15) rotate(var(--rot));
     opacity: 1;
   }
   65% {
-    transform: translate(-50%, -50%) scale(1) rotate(var(--rot));
+    transform: translate(calc(-50% + var(--to-x)), calc(-50% + var(--to-y))) scale(1) rotate(var(--rot));
     opacity: 1;
   }
   100% {
-    transform: translate(-50%, -50%) scale(1) rotate(var(--rot));
+    transform: translate(calc(-50% + var(--to-x)), calc(-50% + var(--to-y))) scale(1) rotate(var(--rot));
     opacity: 0;
   }
 }

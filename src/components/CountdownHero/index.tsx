@@ -1,5 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { View, Text } from '@tarojs/components';
+import type { ITouchEvent } from '@tarojs/components';
+import Taro from '@tarojs/taro';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/lib/pension';
 import { useStore } from '@/store/useStore';
@@ -18,6 +20,9 @@ interface FlyStamp {
   /** 飞行起点相对圆环中心的偏移（rpx） */
   fromX: string;
   fromY: string;
+  /** 落地位置相对圆环中心的偏移（rpx），跟随点击位置 */
+  toX: string;
+  toY: string;
   /** 旋转角度 */
   rot: string;
 }
@@ -48,11 +53,24 @@ export default function CountdownHero({
   const [flyStamps, setFlyStamps] = useState<FlyStamp[]>([]);
   const idRef = useRef(0);
 
-  const handleCheckin = useCallback(() => {
+  const handleCheckin = useCallback((touchRelX?: number, touchRelY?: number) => {
     // 首次点击正式打卡
     if (!checked) checkinToday();
 
-    // 随机起点偏移：从屏幕边缘飞向圆环中心（路径要长，视觉冲击力强）
+    // 落地位置：跟随触摸点，相对圆环中心换算成 rpx
+    // 圆环为 420rpx×420rpx，中心 = (210rpx, 210rpx)
+    // touchRelX/Y 是相对圆环左上角的坐标(px)，落地偏移 = (touch - 中心) 转 rpx
+    let toXrpx = 0;
+    let toYrpx = 0;
+    if (touchRelX != null && touchRelY != null) {
+      const sys = Taro.getWindowInfo?.() || Taro.getSystemInfoSync();
+      const px2rpx = 750 / (sys.windowWidth || 375);
+      const centerPx = (210 / 750) * (sys.windowWidth || 375); // 210rpx → px
+      toXrpx = Math.round((touchRelX - centerPx) * px2rpx);
+      toYrpx = Math.round((touchRelY - centerPx) * px2rpx);
+    }
+
+    // 随机起点偏移：从屏幕边缘飞向落地点（路径要长，视觉冲击力强）
     const edge = Math.floor(Math.random() * 4);
     const dist = 480 + Math.floor(Math.random() * 200); // 480~680rpx，接近屏幕边缘
     let fromX = 0;
@@ -66,6 +84,8 @@ export default function CountdownHero({
       id: idRef.current++,
       fromX: `${fromX}rpx`,
       fromY: `${fromY}rpx`,
+      toX: `${toXrpx}rpx`,
+      toY: `${toYrpx}rpx`,
       rot: `${-8 + Math.floor(Math.random() * 16)}deg`,
     };
     setFlyStamps((prev) => [...prev, stamp]);
@@ -91,7 +111,11 @@ export default function CountdownHero({
         <View className="ring-wrap">
           <View
             className="ring-btn"
-            onClick={handleCheckin}
+            onTouchStart={(e: ITouchEvent) => {
+              // 小程序 touch 事件 touches[0].x/y 为相对组件左上角的坐标
+              const t = e.touches?.[0] || (e as any).detail?.touches?.[0];
+              handleCheckin(t?.x, t?.y);
+            }}
           >
             <View
               className="ring"
@@ -122,7 +146,7 @@ export default function CountdownHero({
             </View>
           </View>
 
-          {/* 飞行"-1"印章层：落点固定为圆环中心 */}
+          {/* 飞行"-1"印章层：落点跟随触摸位置 */}
           <View className="fly-layer">
             {flyStamps.map((s) => (
               <View
@@ -132,6 +156,8 @@ export default function CountdownHero({
                   {
                     '--from-x': s.fromX,
                     '--from-y': s.fromY,
+                    '--to-x': s.toX,
+                    '--to-y': s.toY,
                     '--rot': s.rot,
                   } as React.CSSProperties
                 }
