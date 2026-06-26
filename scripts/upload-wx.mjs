@@ -29,6 +29,7 @@ async function main() {
   console.log(`  AppID:   ${APPID}`);
   console.log(`  构建产物: ${PROJECT_PATH}`);
   console.log(`  模式:    ${MOCK ? '模拟（MOCK）' : '真实上传'}`);
+  console.log(`  时间:    ${new Date().toISOString()}`);
   console.log('───────────────────────────────────────────');
 
   if (MOCK) {
