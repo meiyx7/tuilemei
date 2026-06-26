@@ -9,7 +9,7 @@ import {
   parseYearMonth,
   todayYm,
 } from '@/lib/pension';
-import { APP_VERSION, BUILD_TIME } from '@/lib/updater';
+import { APP_VERSION, BUILD_TIME, formatBeijingTime } from '@/lib/updater';
 import CountdownHero from '@/components/CountdownHero';
 import ProfileModal from '@/components/ProfileModal';
 import OnboardingModal from '@/components/OnboardingModal';
@@ -87,7 +87,7 @@ export default function Dashboard() {
         </Text>
         <Text className="footer-version">
           v{APP_VERSION}
-          {BUILD_TIME ? ` · ${BUILD_TIME}` : ''}
+          {BUILD_TIME ? ` · ${formatBeijingTime(BUILD_TIME)}` : ''}
         </Text>
       </View>
 

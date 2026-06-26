@@ -7,14 +7,24 @@
   overflow: visible;
 }
 
-/* 装饰邮戳 */
+/* 装饰邮戳：裁剪容器固定在右上角，只露出邮戳左下约四分之一（对齐网页版 overflow-hidden 效果） */
+.deco-stamp-clip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 96rpx;
+  height: 96rpx;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
 .deco-stamp {
   position: absolute;
-  top: -8rpx;
-  right: -8rpx;
+  /* 负偏移让邮戳中心移到裁剪容器右下角外，只露出左下四分之一 */
+  top: -76rpx;
+  right: -76rpx;
   transform: rotate(-11deg);
   opacity: 0.12;
-  pointer-events: none;
 }
 .deco-stamp-inner {
   width: 152rpx;
@@ -66,24 +76,11 @@
   width: 420rpx;
   height: 420rpx;
   border-radius: 50%;
-  transition: background 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-/* 进度环圆角端点：直径=环厚度(22rpx)，定位在环中心线(半径199rpx)上，
-   用 rotate+translateY 移到对应角度，模拟 linecap:round */
-.ring-cap {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 22rpx;
-  height: 22rpx;
-  margin: -11rpx 0 0 -11rpx;
-  border-radius: 50%;
-  background-color: $amber;
-  z-index: 2;
-  pointer-events: none;
-}
-.ring-cap-start {
-  transform: rotate(0deg) translateY(-199rpx);
+  /* SVG 进度环作为背景图（与网页版 ProgressRing 视觉一致，双端圆角） */
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  transition: background-image 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .ring-mask {
   position: absolute;

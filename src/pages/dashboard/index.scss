@@ -94,7 +94,8 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: 28rpx;
+  /* 横线穿过节点中心：padding-top(8rpx) + dot-wrap 高度(56rpx) 的一半(28rpx) = 36rpx */
+  top: 36rpx;
   height: 2rpx;
   background-color: $card-edge;
 }
@@ -102,7 +103,7 @@
 .tl-progress {
   position: absolute;
   left: 0;
-  top: 28rpx;
+  top: 36rpx;
   height: 2rpx;
   background-color: $amber;
   transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);

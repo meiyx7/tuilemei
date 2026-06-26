@@ -27,6 +27,24 @@ interface FlyStamp {
   rot: string;
 }
 
+/**
+ * 生成环形进度 SVG data URI（与网页版 ProgressRing 视觉一致）。
+ * viewBox 220x220，strokeWidth=11，r=104.5，进度环 rotate(-90) 从顶部起笔，
+ * strokeLinecap=round 实现双端天然圆角。
+ * 返回值已做 URL 编码，可直接拼到 data:image/svg+xml, 后。
+ */
+function ringSvg(pct: number): string {
+  const clamped = Math.max(0, Math.min(100, pct));
+  const r = 104.5;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - clamped / 100);
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>
+  <circle cx='110' cy='110' r='${r}' fill='none' stroke='#E2D9C3' stroke-width='11'/>
+  <circle cx='110' cy='110' r='${r}' fill='none' stroke='#C8893B' stroke-width='11' stroke-linecap='round' stroke-dasharray='${circ}' stroke-dashoffset='${offset}' transform='rotate(-90 110 110)'/>
+</svg>`;
+  return encodeURIComponent(svg);
+}
+
 /** 缓存圆环在视口中的位置与尺寸，用于触摸时换算落地偏移 */
 interface RingRect { left: number; top: number; width: number; height: number }
 
@@ -132,11 +150,13 @@ export default function CountdownHero({
 
   return (
     <View className="hero">
-      {/* 装饰：右上角邮戳（淡化） */}
-      <View className="deco-stamp">
-        <View className="deco-stamp-inner">
-          <Text className="deco-stamp-main">退休</Text>
-          <Text className="deco-stamp-sub">RETIREMENT</Text>
+      {/* 装饰：右上角邮戳（淡化）。裁剪容器只露出左下约四分之一，对齐网页版效果 */}
+      <View className="deco-stamp-clip">
+        <View className="deco-stamp">
+          <View className="deco-stamp-inner">
+            <Text className="deco-stamp-main">退休</Text>
+            <Text className="deco-stamp-sub">RETIREMENT</Text>
+          </View>
         </View>
       </View>
 
@@ -151,22 +171,13 @@ export default function CountdownHero({
               handleCheckin(t?.clientX, t?.clientY);
             }}
           >
+            {/* SVG 环形进度：与网页版一致，双端 strokeLinecap=round 天然圆角。
+                小程序不支持 <svg> 标签，用 background-image 内联 SVG data URI 实现。
+                viewBox 220x220，strokeWidth=11，r=104.5，进度环旋转-90°从顶部起笔。 */}
             <View
               className="ring"
-              style={{ background: `conic-gradient(#C8893B 0% ${pct}%, #E2D9C3 ${pct}% 100%)` }}
+              style={{ backgroundImage: `url("data:image/svg+xml,${ringSvg(pct)}")` }}
             />
-            {/* 进度环圆角端点：起点（顶部）+ 终点（随进度旋转），用小圆点模拟 linecap:round */}
-            {pct > 0 && (
-              <>
-                <View className="ring-cap ring-cap-start" />
-                {pct < 100 && (
-                  <View
-                    className="ring-cap ring-cap-end"
-                    style={{ transform: `rotate(${pct * 3.6}deg) translateY(-199rpx)` }}
-                  />
-                )}
-              </>
-            )}
             <View className="ring-mask">
               <Text className="eyebrow">已过</Text>
               <Text className="ring-pct">
@@ -208,7 +219,7 @@ export default function CountdownHero({
           <View className="countdown-eyebrow">
             <Text className="num today-label">{todayLabel}</Text>
             <Text className="dot">·</Text>
-            <Text>{retired ? '已到法定退休年龄' : '距离退休还有'}</Text>
+            <Text className="num today-label">{retired ? '已到法定退休年龄' : '距离退休还有'}</Text>
           </View>
 
           {retired ? (

@@ -12,7 +12,7 @@
   /* 弹框从顶部预留区下方开始，整体不超 Tab 栏位置 */
   align-items: flex-start;
   justify-content: center;
-  padding: 0 32rpx 96rpx;
+  padding: 0 32rpx 160rpx;
 }
 
 .modal-card {
@@ -22,7 +22,7 @@
   max-width: 640rpx;
   /* 高度由内联 style 控制（100vh - 顶部预留 - 底部 padding），
      确保弹框不超出 Tab 栏且 ScrollView 能正确滚动 */
-  max-height: calc(100vh - 96rpx);
+  max-height: calc(100vh - 160rpx);
   padding: 40rpx;
   display: flex;
   flex-direction: column;
