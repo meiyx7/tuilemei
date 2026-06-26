@@ -48,8 +48,13 @@ export function drawShareCard(
   const { retirement, pension, careerProgress, streak, workStartDate, checked } = data;
   const W = rpx2px(680);
   const H = rpx2px(1280);
-  canvas.width = W;
-  canvas.height = H;
+  // 高清渲染：按设备像素比放大绘制缓冲区，ctx.scale 后绘制代码仍用逻辑 px，
+  // 导出的图片为 dpr 倍分辨率，消除马赛克/锯齿
+  const sys = Taro.getWindowInfo?.() || Taro.getSystemInfoSync();
+  const dpr = sys.pixelRatio || 2;
+  canvas.width = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  ctx.scale(dpr, dpr);
   const px = rpx2px;
 
   // ---- 背景 ----
@@ -96,8 +101,8 @@ export function drawShareCard(
   // ========== 2. 圆环进度 ==========
   const cx = pad + cardW / 2;
   const cy = pad + px(380);
-  const r = px(140);
-  const ringW = px(28);
+  const r = px(170);
+  const ringW = px(22);
   const pct = Math.round(careerProgress * 100);
 
   // 底环
@@ -107,13 +112,15 @@ export function drawShareCard(
   ctx.lineWidth = ringW;
   ctx.stroke();
 
-  // 进度环（从顶部顺时针）
+  // 进度环（从顶部顺时针，lineCap=round 自然得到圆角端点，与首页 ring-cap 一致）
   if (pct > 0) {
     ctx.beginPath();
     ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (pct / 100));
     ctx.strokeStyle = '#C8893B';
     ctx.lineWidth = ringW;
+    ctx.lineCap = 'round';
     ctx.stroke();
+    ctx.lineCap = 'butt'; // 复位，避免影响后续线段
   }
 
   // 中心遮罩圆

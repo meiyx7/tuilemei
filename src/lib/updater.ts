@@ -1,6 +1,6 @@
 // 退了没小程序 —— 版本信息与更新（小程序版用 wx.getUpdateManager，无需 GitHub API）
 
-export const APP_VERSION = '0.3.4';
+export const APP_VERSION = '0.3.5';
 export const BUILD_TIME = __BUILD_TIME__ || '';
 
 export interface UpdateInfo {
