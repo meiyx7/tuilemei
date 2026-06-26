@@ -42,12 +42,34 @@ jobs:
         env:
           WX_APPID: ${{ secrets.WX_APPID }}
           WX_PRIVATE_KEY: ${{ secrets.WX_PRIVATE_KEY }}
+          WX_PRIVATE_KEY_BASE64: ${{ secrets.WX_PRIVATE_KEY_BASE64 }}
         run: |
-          if [ -z "$WX_APPID" ] || [ -z "$WX_PRIVATE_KEY" ]; then
-            echo "::warning::未配置微信 secrets (WX_APPID / WX_PRIVATE_KEY)，进入模拟上传模式"
+          if [ -z "$WX_APPID" ]; then
+            echo "::warning::未配置 WX_APPID，进入模拟上传模式"
             MOCK_UPLOAD=true pnpm run upload:wx
-          else
-            echo "$WX_PRIVATE_KEY" > private.key
-            WX_APPID="$WX_APPID" WX_PRIVATE_KEY_PATH=./private.key pnpm run upload:wx
-            rm -f private.key
+            exit 0
           fi
+
+          # 优先使用 base64 编码的私钥（避免 GitHub Secret 换行符丢失导致 PEM 解码失败）
+          if [ -n "$WX_PRIVATE_KEY_BASE64" ]; then
+            echo "$WX_PRIVATE_KEY_BASE64" | base64 -d > private.key
+          elif [ -n "$WX_PRIVATE_KEY" ]; then
+            # 回退：明文私钥，用 printf 避免末尾多余换行
+            printf '%s\n' "$WX_PRIVATE_KEY" > private.key
+          else
+            echo "::warning::未配置微信私钥 (WX_PRIVATE_KEY_BASE64 或 WX_PRIVATE_KEY)，进入模拟上传模式"
+            MOCK_UPLOAD=true pnpm run upload:wx
+            exit 0
+          fi
+
+          # 诊断信息：检查私钥是否为合法 PEM（含 BEGIN/END 标记与多行）
+          echo "私钥行数：$(wc -l < private.key)"
+          head -1 private.key
+          if ! grep -q "BEGIN" private.key; then
+            echo "::error::私钥文件缺少 BEGIN 标记，格式不正确。请用 base64 编码后存为 WX_PRIVATE_KEY_BASE64"
+            rm -f private.key
+            exit 1
+          fi
+
+          WX_APPID="$WX_APPID" WX_PRIVATE_KEY_PATH=./private.key pnpm run upload:wx
+          rm -f private.key
