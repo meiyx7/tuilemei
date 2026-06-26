@@ -3,7 +3,8 @@
 .hero {
   position: relative;
   padding: 16rpx 0 8rpx;
-  overflow: hidden;
+  /* 不裁剪 fly-stamp：让飞行印章从屏幕边缘飞入时不被 hidden 截断 */
+  overflow: visible;
 }
 
 /* 装饰邮戳 */
@@ -108,11 +109,13 @@
   background-color: rgba(178, 58, 46, 0.05);
 }
 
-/* 飞行 "-1" 印章层 */
+/* 飞行 "-1" 印章层：覆盖 ring-wrap，stamp 从外部飞向圆环中心。
+   父元素 overflow: visible 保证远处起点不被裁剪 */
 .fly-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 100;
 }
 .fly-stamp {
   position: absolute;

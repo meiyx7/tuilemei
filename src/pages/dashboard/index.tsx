@@ -21,6 +21,7 @@ export default function Dashboard() {
   const profile = useStore((s) => s.profile);
   const onboarded = useStore((s) => s.onboarded);
   const streak = useStore((s) => s.streak());
+  const checked = useStore((s) => s.isCheckedInToday());
   const retirement = calcRetirementAge(profile);
   const pension = calcPension(profile);
 
@@ -54,7 +55,7 @@ export default function Dashboard() {
         return;
       }
       const ctx = canvas.getContext('2d');
-      drawShareCard(ctx, canvas, { retirement, pension, careerProgress, streak });
+      drawShareCard(ctx, canvas, { retirement, pension, careerProgress, streak, workStartDate: profile.workStartDate, checked });
       setTimeout(async () => {
         try {
           await saveCanvasToAlbum(canvas);
@@ -74,18 +75,20 @@ export default function Dashboard() {
 
   return (
     <View className="page container">
-      {/* 顶部 Tab 导航 */}
-      <TopTab current="dashboard" />
-
-      {/* 顶部操作行 */}
-      <View className="topbar">
-        <View className="topbar-btn" onClick={() => setProfileOpen(true)}>
-          <Text>设置</Text>
-        </View>
-        <View className={cn('topbar-btn', sharing && 'topbar-btn-disabled')} onClick={handleShare}>
-          <Text>{sharing ? '◌ 生成中' : '↗ 分享'}</Text>
-        </View>
-      </View>
+      {/* 顶部 Tab 导航 + 操作按钮 */}
+      <TopTab
+        current="dashboard"
+        extra={
+          <>
+            <View className="toptab-btn" onClick={() => setProfileOpen(true)}>
+              <Text>设置</Text>
+            </View>
+            <View className={cn('toptab-btn', sharing && 'toptab-btn-disabled')} onClick={handleShare}>
+              <Text>{sharing ? '◌' : '↗'}</Text>
+            </View>
+          </>
+        }
+      />
 
       {/* 倒计时主视觉 */}
       <View className="section">

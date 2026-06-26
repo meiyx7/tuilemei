@@ -22,7 +22,7 @@ export default function UpdateModal({ open, onClose, info }: UpdateModalProps) {
   };
 
   return (
-    <View className="um-overlay" onClick={onClose}>
+    <View catchMove className="um-overlay" onClick={onClose}>
       <View className="um-card" onClick={stopClose}>
         <View className="um-close" onClick={onClose}>
           <Text>×</Text>

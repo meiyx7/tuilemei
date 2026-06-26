@@ -52,15 +52,15 @@ export default function CountdownHero({
     // 首次点击正式打卡
     if (!checked) checkinToday();
 
-    // 随机起点偏移（模拟从屏幕边缘飞来）
+    // 随机起点偏移：从屏幕边缘飞向圆环中心（路径要长，视觉冲击力强）
     const edge = Math.floor(Math.random() * 4);
-    const dist = 220 + Math.floor(Math.random() * 120);
+    const dist = 480 + Math.floor(Math.random() * 200); // 480~680rpx，接近屏幕边缘
     let fromX = 0;
     let fromY = 0;
-    if (edge === 0) { fromX = Math.floor(Math.random() * 200 - 100); fromY = -dist; }
-    else if (edge === 1) { fromX = dist; fromY = Math.floor(Math.random() * 200 - 100); }
-    else if (edge === 2) { fromX = Math.floor(Math.random() * 200 - 100); fromY = dist; }
-    else { fromX = -dist; fromY = Math.floor(Math.random() * 200 - 100); }
+    if (edge === 0) { fromX = Math.floor(Math.random() * 300 - 150); fromY = -dist; }
+    else if (edge === 1) { fromX = dist; fromY = Math.floor(Math.random() * 300 - 150); }
+    else if (edge === 2) { fromX = Math.floor(Math.random() * 300 - 150); fromY = dist; }
+    else { fromX = -dist; fromY = Math.floor(Math.random() * 300 - 150); }
 
     const stamp: FlyStamp = {
       id: idRef.current++,

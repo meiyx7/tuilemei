@@ -61,7 +61,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
 
   const handleLocate = async () => {
     setLocating(true);
-    setLocateHint(null);
+    setLocateHint('正在定位…');
     try {
       const province = await detectProvince();
       if (province) {
@@ -70,10 +70,10 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
         if (avg) set('socialAvgSalary', avg);
         setLocateHint(`已定位到 ${province}`);
       } else {
-        setLocateHint('无法识别所在省份，请手动选择');
+        setLocateHint('定位失败，请手动选择省份');
       }
     } catch {
-      setLocateHint('定位失败，请手动选择');
+      setLocateHint('定位失败，请手动选择省份');
     } finally {
       setLocating(false);
     }
@@ -101,7 +101,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
   const provinceIndex = Math.max(0, PROVINCE_LIST.indexOf(draft.province));
 
   return (
-    <View className="ob-overlay" onClick={handleSkip}>
+    <View catchMove className="ob-overlay" onClick={handleSkip}>
       <View className="ob-card" onClick={stopClose}>
         {/* 步骤指示器 */}
         <View className="ob-steps">

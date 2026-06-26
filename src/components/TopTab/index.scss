@@ -3,10 +3,23 @@
 .toptab {
   display: flex;
   align-items: stretch;
-  gap: 0;
   padding: 16rpx 0 12rpx;
   border-bottom: 1rpx solid rgba($card-edge, 0.6);
   margin-bottom: 8rpx;
+}
+
+.toptab-tabs {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+}
+
+.toptab-extra {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding-left: 16rpx;
 }
 
 .toptab-item {
@@ -40,4 +53,27 @@
     border-radius: 999rpx;
     background-color: $stamp;
   }
+}
+
+/* extra 按钮样式（复用 topbar-btn 风格） */
+.toptab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rpx 20rpx;
+  font-size: 26rpx;
+  color: $slate;
+  border: 1rpx solid rgba($card-edge, 0.8);
+  border-radius: 999rpx;
+  background-color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+
+  &:active {
+    background-color: rgba($stamp, 0.08);
+    color: $stamp;
+  }
+}
+
+.toptab-btn-disabled {
+  opacity: 0.5;
 }

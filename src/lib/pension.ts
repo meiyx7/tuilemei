@@ -53,31 +53,95 @@ export const PROVINCE_LIST = Object.keys(PROVINCE_AVG_SALARY);
  * 通过小程序定位 + 逆地理编码自动识别所在省份。
  * 成功返回 PROVINCE_LIST 中的省份名，失败返回 null。
  */
-export async function detectProvince(): Promise<string | null> {
-  try {
-    // 1. 小程序获取定位
-    const pos = await Taro.getLocation({ type: 'wgs84' });
-    const { latitude, longitude } = pos;
+/**
+ * 各省省会经纬度（用于逆地理编码失败时做坐标最近邻匹配）。
+ * 精度有限但足以覆盖大部分场景，避免 request 域名未配置时定位完全失效。
+ */
+const PROVINCE_COORDS: Array<{ name: string; lat: number; lon: number }> = [
+  { name: '北京', lat: 39.90, lon: 116.40 },
+  { name: '天津', lat: 39.08, lon: 117.20 },
+  { name: '上海', lat: 31.23, lon: 121.47 },
+  { name: '重庆', lat: 29.56, lon: 106.55 },
+  { name: '广东', lat: 23.13, lon: 113.27 },
+  { name: '江苏', lat: 32.06, lon: 118.80 },
+  { name: '浙江', lat: 30.27, lon: 120.15 },
+  { name: '山东', lat: 36.65, lon: 117.00 },
+  { name: '河南', lat: 34.76, lon: 113.65 },
+  { name: '河北', lat: 38.04, lon: 114.51 },
+  { name: '山西', lat: 37.87, lon: 112.55 },
+  { name: '湖北', lat: 30.59, lon: 114.31 },
+  { name: '湖南', lat: 28.23, lon: 112.94 },
+  { name: '安徽', lat: 31.86, lon: 117.28 },
+  { name: '福建', lat: 26.08, lon: 119.30 },
+  { name: '江西', lat: 28.68, lon: 115.89 },
+  { name: '四川', lat: 30.67, lon: 104.07 },
+  { name: '辽宁', lat: 41.80, lon: 123.43 },
+  { name: '吉林', lat: 43.89, lon: 125.32 },
+  { name: '黑龙江', lat: 45.75, lon: 126.63 },
+  { name: '陕西', lat: 34.27, lon: 108.95 },
+  { name: '甘肃', lat: 36.06, lon: 103.83 },
+  { name: '青海', lat: 36.62, lon: 101.78 },
+  { name: '云南', lat: 25.04, lon: 102.71 },
+  { name: '贵州', lat: 26.65, lon: 106.71 },
+  { name: '广西', lat: 22.82, lon: 108.37 },
+  { name: '海南', lat: 20.02, lon: 110.35 },
+  { name: '内蒙古', lat: 40.82, lon: 111.67 },
+  { name: '宁夏', lat: 38.47, lon: 106.27 },
+  { name: '新疆', lat: 43.79, lon: 87.63 },
+  { name: '西藏', lat: 29.65, lon: 91.13 },
+];
 
-    // 2. Nominatim 逆地理编码
+/** 用经纬度做最近邻省份匹配（逆地理编码不可用时的备用方案） */
+function guessProvinceByCoord(lat: number, lon: number): string | null {
+  let minDist = Infinity;
+  let nearest: string | null = null;
+  for (const p of PROVINCE_COORDS) {
+    const dist = (p.lat - lat) ** 2 + (p.lon - lon) ** 2;
+    if (dist < minDist) {
+      minDist = dist;
+      nearest = p.name;
+    }
+  }
+  // 只在 PROVINCE_LIST 中的才返回
+  if (nearest && PROVINCE_LIST.includes(nearest)) return nearest;
+  return null;
+}
+
+export async function detectProvince(): Promise<string | null> {
+  let latitude: number;
+  let longitude: number;
+  try {
+    // 1. 小程序获取定位（首次会弹权限确认框）
+    const pos = await Taro.getLocation({ type: 'wgs84' });
+    latitude = pos.latitude;
+    longitude = pos.longitude;
+  } catch {
+    // getLocation 失败（拒绝授权等），无法继续
+    return null;
+  }
+
+  // 2. 尝试 Nominatim 逆地理编码
+  //    注意：体验版/正式版需在后台配置 request 合法域名 nominatim.openstreetmap.org
+  try {
     const url =
       `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}` +
       `&format=json&accept-language=zh`;
     const res = await Taro.request({ url, header: { Accept: 'application/json' } });
-    if (res.statusCode !== 200) throw new Error('逆地理编码请求失败');
-    const stateName: string =
-      res.data?.address?.state || res.data?.address?.province || res.data?.address?.region || '';
-
-    if (!stateName) return null;
-
-    // 3. 映射到省份列表
-    for (const p of PROVINCE_LIST) {
-      if (stateName.includes(p) || p.includes(stateName)) return p;
+    if (res.statusCode === 200) {
+      const stateName: string =
+        res.data?.address?.state || res.data?.address?.province || res.data?.address?.region || '';
+      if (stateName) {
+        for (const p of PROVINCE_LIST) {
+          if (stateName.includes(p) || p.includes(stateName)) return p;
+        }
+      }
     }
-    return null;
   } catch {
-    return null;
+    // 逆地理编码失败（域名未配置/网络超时），走备用方案
   }
+
+  // 3. 备用：用坐标做最近邻省份匹配
+  return guessProvinceByCoord(latitude, longitude);
 }
 
 const PERSONAL_ACCOUNT_RATE = 0.04;

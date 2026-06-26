@@ -40,15 +40,15 @@ export default function Calc() {
 
   return (
     <View className="page container">
-      {/* 顶部 Tab 导航 */}
-      <TopTab current="calc" />
-
-      {/* 顶部操作行 */}
-      <View className="topbar">
-        <View className="topbar-btn" onClick={() => setProfileOpen(true)}>
-          <Text>调整参数</Text>
-        </View>
-      </View>
+      {/* 顶部 Tab 导航 + 调整参数按钮 */}
+      <TopTab
+        current="calc"
+        extra={
+          <View className="toptab-btn" onClick={() => setProfileOpen(true)}>
+            <Text>调整参数</Text>
+          </View>
+        }
+      />
 
       {/* 养老金总额 */}
       <View className="section">

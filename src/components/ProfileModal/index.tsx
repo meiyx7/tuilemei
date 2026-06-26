@@ -85,7 +85,7 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
   const provinceIndex = Math.max(0, PROVINCE_LIST.indexOf(draft.province));
 
   return (
-    <View className="modal-overlay" onClick={onClose}>
+    <View catchMove className="modal-overlay" onClick={onClose}>
       <View className="modal-card" onClick={stopClose}>
         {/* 关闭按钮 */}
         <View className="modal-close" onClick={onClose}>
