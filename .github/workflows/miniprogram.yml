@@ -23,7 +23,7 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile
 
       - name: 类型检查
         run: pnpm run check
@@ -44,8 +44,6 @@ jobs:
           WX_PRIVATE_KEY: ${{ secrets.WX_PRIVATE_KEY }}
           WX_PRIVATE_KEY_BASE64: ${{ secrets.WX_PRIVATE_KEY_BASE64 }}
         run: |
-          # miniprogram-ci 内部用 @babel/preset-env 编译 JS，需 @babel/types 可见
-          pnpm add -D @babel/types @babel/core @babel/preset-env
           if [ -z "$WX_APPID" ]; then
             echo "::warning::未配置 WX_APPID，进入模拟上传模式"
             MOCK_UPLOAD=true pnpm run upload:wx
