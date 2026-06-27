@@ -29,6 +29,9 @@ jobs:
         run: pnpm run check
 
       - name: 构建微信小程序
+        env:
+          # 云开发环境 ID：未配置则禁用云同步，回退纯本地存储
+          CLOUD_ENV_ID: ${{ secrets.CLOUD_ENV_ID }}
         run: pnpm run build:wx
 
       - name: 上传产物
