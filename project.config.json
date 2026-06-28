@@ -1,8 +1,9 @@
 {
   "miniprogramRoot": "dist/weapp/",
+  "cloudfunctionRoot": "cloudfunctions/",
   "projectname": "tuilemei",
   "description": "退了没 —— 退休进度追踪小程序",
-  "appid": "wx0000000000000000",
+  "appid": "wx8c91ec8355347154",
   "setting": {
     "urlCheck": false,
     "es6": true,

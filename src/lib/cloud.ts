@@ -90,3 +90,30 @@ export async function saveCloudData(data: CloudUserData): Promise<void> {
     console.warn('[cloud] 保存数据失败', e);
   }
 }
+
+/**
+ * 获取小程序码图片临时路径（用于分享卡片绘制）。
+ * 调用 getMiniCode 云函数生成小程序码并上传云存储，返回 fileID；
+ * 再用 wx.cloud.getTempFileURL 换成可绘制的临时路径。
+ * 失败时返回空字符串，分享卡片会跳过二维码绘制。
+ */
+export async function getMiniCodeImage(): Promise<string> {
+  if (!cloudReady) return '';
+  try {
+    const res = await (wx as any).cloud.callFunction({
+      name: 'getMiniCode',
+      data: { scene: 'share' },
+    });
+    const fileID = res?.result?.fileID;
+    if (!fileID) {
+      console.warn('[cloud] 小程序码生成失败', res?.result);
+      return '';
+    }
+    const urlRes = await (wx as any).cloud.getTempFileURL({ fileList: [fileID] });
+    const url = urlRes?.fileList?.[0]?.tempFileURL;
+    return url || '';
+  } catch (e) {
+    console.warn('[cloud] 获取小程序码失败', e);
+    return '';
+  }
+}

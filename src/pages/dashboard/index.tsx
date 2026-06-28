@@ -13,6 +13,7 @@ import { APP_VERSION, BUILD_TIME, formatBeijingTime } from '@/lib/updater';
 import CountdownHero from '@/components/CountdownHero';
 import ProfileModal from '@/components/ProfileModal';
 import OnboardingModal from '@/components/OnboardingModal';
+import ShareCard from '@/components/ShareCard';
 import TopTab from '@/components/TopTab';
 import './index.scss';
 
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const pension = calcPension(profile);
 
   const [profileOpen, setProfileOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // 职业生涯进度：已工作月数 / 总工作月数（入职到退休）
   const workStartMonths = parseYearMonth(profile.workStartDate).year * 12 +
@@ -77,6 +79,12 @@ export default function Dashboard() {
         />
       </View>
 
+      {/* 分享入口：生成分享卡片图片保存到相册，绕过未认证线上版分享限制 */}
+      <View className="share-entry" onClick={() => setShareOpen(true)}>
+        <Text className="share-entry-text">生成分享卡片</Text>
+        <Text className="share-entry-arrow">›</Text>
+      </View>
+
       {/* 底部声明 */}
       <View className="footer">
         <View className="almanac-rule" />
@@ -95,6 +103,13 @@ export default function Dashboard() {
       <OnboardingModal open={!onboarded} onClose={() => {}} />
       {/* 个人档案设置 */}
       <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+      {/* 分享卡片 */}
+      <ShareCard
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        retirement={retirement}
+        pension={pension}
+      />
     </View>
   );
 }

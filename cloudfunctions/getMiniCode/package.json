@@ -1,0 +1,9 @@
+{
+  "name": "getMiniCode",
+  "version": "1.0.0",
+  "description": "生成小程序码用于分享卡片",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

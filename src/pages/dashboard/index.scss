@@ -195,6 +195,29 @@
   white-space: nowrap;
 }
 
+/* 分享入口 */
+.share-entry {
+  margin-top: 32rpx;
+  padding: 28rpx 32rpx;
+  background: $card;
+  border: 2rpx solid $card-edge;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.share-entry-text {
+  font-family: $font-display;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: $ink;
+}
+.share-entry-arrow {
+  font-size: 40rpx;
+  color: $slate-soft;
+  line-height: 1;
+}
+
 /* 底部声明 */
 .footer {
   margin-top: 64rpx;
