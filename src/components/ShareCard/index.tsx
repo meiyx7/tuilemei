@@ -284,7 +284,7 @@ export default function ShareCard({
         ctx.fillText('加载失败', 110, 1150);
       }
 
-      // 11. 右下角品牌图标:印章红圆 + 进度环 + 咖啡杯(退休享受语义)
+      // 11. 右下角品牌图标:进度环 + 咖啡杯(极简工具风,按设计稿 SVG 还原)
       drawBrandStamp(ctx, CARD_W - 85, CARD_H - 85);
 
       // 12. 导出图片
@@ -489,130 +489,75 @@ function drawDecoStamp(ctx: any, cx: number, cy: number) {
 }
 
 /**
- * 右下角品牌图标:印章红圆(毛边+缺口)+ 内部进度环 + 咖啡杯。
- * 进度环(灰底+橙前景)与首页圆环语义一致,咖啡杯代表退休享受,
- * 整体白色阴文,与纸本印章风格统一。
+ * 右下角品牌图标:极简工具风进度环 + 咖啡杯。
+ * 完全按设计稿 SVG 还原(viewBox 120×120):
+ *  - 进度环背景:#E0D5C1,stroke-width 8
+ *  - 进度环前景:#FF8C42,stroke-width 8,linecap round,77% 进度
+ *  - 咖啡杯:杯身+杯把 #5D4037,热气 #BCAAA4
+ *  - 无朱砂红底,纯图标
  */
 function drawBrandStamp(ctx: any, cx: number, cy: number) {
-  const r = 55;
+  // SVG viewBox 120,缩放系数:目标尺寸 110px / 120 ≈ 0.917
+  const scale = 0.917;
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate(-4 * Math.PI / 180); // 轻微倾斜,盖章不可能正
+  ctx.scale(scale, scale);
+  // 平移让 SVG 的 (60,60) 对齐到本地 (0,0)
+  ctx.translate(-60, -60);
 
-  // 1. 外圈朱砂红毛边:多段二次贝塞尔模拟不规则边缘
-  ctx.fillStyle = '#9e2b21';
-  ctx.beginPath();
-  const segments = 48;
-  for (let i = 0; i <= segments; i++) {
-    const a = (i / segments) * Math.PI * 2;
-    const jitter = 0.92 + Math.sin(i * 1.3) * 0.05 + (i % 3) * 0.03;
-    const rad = r * jitter;
-    const x = Math.cos(a) * rad;
-    const y = Math.sin(a) * rad;
-    if (i === 0) ctx.moveTo(x, y);
-    else {
-      const prevA = ((i - 1) / segments) * Math.PI * 2;
-      const cpRad = r * (1.03 + Math.sin(i * 0.7) * 0.03);
-      const cpx = Math.cos((a + prevA) / 2) * cpRad;
-      const cpy = Math.sin((a + prevA) / 2) * cpRad;
-      ctx.quadraticCurveTo(cpx, cpy, x, y);
-    }
-  }
-  ctx.closePath();
-  ctx.fill();
-
-  // 2. 局部缺口(destination-out 挖小圆模拟按压不均)
-  ctx.globalCompositeOperation = 'destination-out';
-  const gaps = [
-    { x: -r * 0.88, y: r * 0.15, rr: 3.5 },
-    { x: r * 0.72, y: -r * 0.72, rr: 3 },
-    { x: r * 0.25, y: r * 0.92, rr: 2.5 },
-    { x: -r * 0.5, y: -r * 0.82, rr: 2 },
-  ];
-  gaps.forEach((g) => {
-    ctx.beginPath();
-    ctx.arc(g.x, g.y, g.rr, 0, Math.PI * 2);
-    ctx.fill();
-  });
-  ctx.globalCompositeOperation = 'source-over';
-
-  // 3. 内框双圈(古印样式,白色阴文)
-  ctx.strokeStyle = '#f4efe3';
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  ctx.arc(0, 0, r - 6, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.lineWidth = 0.7;
-  ctx.beginPath();
-  ctx.arc(0, 0, r - 10, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // 4. 进度环(灰底 + 橙前景,与首页圆环语义一致,白色阴文色调)
-  const ringR = 26;
-  const ringStroke = 5;
-  // 底环(纸本灰)
-  ctx.strokeStyle = '#f4efe3';
-  ctx.globalAlpha = 0.35;
-  ctx.lineWidth = ringStroke;
-  ctx.beginPath();
-  ctx.arc(0, -2, ringR, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-  // 前景环(约 77% 进度,倒计时语义)
-  ctx.strokeStyle = '#f4efe3';
-  ctx.lineWidth = ringStroke;
   ctx.lineCap = 'round';
+
+  // 1. 进度环背景 (#E0D5C1)
+  ctx.strokeStyle = '#E0D5C1';
+  ctx.lineWidth = 8;
   ctx.beginPath();
+  ctx.arc(60, 60, 42, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 2. 进度环前景 (#FF8C42,77% 进度,从顶部顺时针)
+  ctx.strokeStyle = '#FF8C42';
+  ctx.lineWidth = 8;
   const pct = 0.77;
-  ctx.arc(0, -2, ringR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct);
+  ctx.beginPath();
+  ctx.arc(60, 60, 42, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct);
   ctx.stroke();
 
-  // 5. 咖啡杯(白色阴文,代表退休享受)
-  drawCoffeeCup(ctx, 0, 0);
-
-  ctx.restore();
-}
-
-/**
- * 画一个简约咖啡杯(白色阴文):杯身梯形 + 杯把 + 两缕热气。
- * 中心在 (cx, cy),整体约 24×24。
- */
-function drawCoffeeCup(ctx: any, cx: number, cy: number) {
+  // 3. 咖啡杯组(原 SVG translate(42,38),坐标系平移到该处)
   ctx.save();
-  ctx.translate(cx, cy);
-  ctx.fillStyle = '#f4efe3';
-  ctx.strokeStyle = '#f4efe3';
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  ctx.translate(42, 38);
 
-  // 杯身:梯形(上宽下窄)
+  // 3.1 杯身(#5D4037):path M5,15 L10,40 H25 L30,15 Z
+  ctx.fillStyle = '#5D4037';
   ctx.beginPath();
-  ctx.moveTo(-7, -3);
-  ctx.lineTo(-5, 8);
-  ctx.lineTo(5, 8);
-  ctx.lineTo(7, -3);
+  ctx.moveTo(5, 15);
+  ctx.lineTo(10, 40);
+  ctx.lineTo(25, 40);
+  ctx.lineTo(30, 15);
   ctx.closePath();
   ctx.fill();
 
-  // 杯把:右侧半圆
+  // 3.2 杯把(#5D4037,stroke 3):M30,20 Q40,20 40,27 Q40,35 30,35
+  ctx.strokeStyle = '#5D4037';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(30, 20);
+  ctx.quadraticCurveTo(40, 20, 40, 27);
+  ctx.quadraticCurveTo(40, 35, 30, 35);
+  ctx.stroke();
+
+  // 3.3 热气(#BCAAA4,stroke 2):两缕 M14,10 Q16,5 14,0 / M21,10 Q23,5 21,0
+  ctx.strokeStyle = '#BCAAA4';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(7, -1);
-  ctx.quadraticCurveTo(13, 0, 13, 3);
-  ctx.quadraticCurveTo(13, 6, 7, 6);
-  ctx.stroke();
-
-  // 热气:两缕波浪线
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  ctx.moveTo(-3, -7);
-  ctx.quadraticCurveTo(-1, -10, -3, -13);
+  ctx.moveTo(14, 10);
+  ctx.quadraticCurveTo(16, 5, 14, 0);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(3, -7);
-  ctx.quadraticCurveTo(5, -10, 3, -13);
+  ctx.moveTo(21, 10);
+  ctx.quadraticCurveTo(23, 5, 21, 0);
   ctx.stroke();
 
+  ctx.restore();
   ctx.restore();
 }
 
