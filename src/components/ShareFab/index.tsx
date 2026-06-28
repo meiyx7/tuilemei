@@ -9,6 +9,19 @@ interface ShareFabProps {
 }
 
 /**
+ * 系统默认分享图标(iOS/Android/微信通用 share icon):方框 + 向上箭头。
+ * 用内联 SVG data URI 渲染,比 CSS 拼图精致圆润。viewBox 24×24,
+ * 白色描边,stroke-linecap/linejoin=round,与印章阴文风格一致。
+ */
+const SHARE_ICON_SVG = encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#f4efe3' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'>` +
+  `<path d='M12 3v11'/>` +                              // 箭杆(从顶部到方框顶部)
+  `<path d='M8 7l4-4 4 4'/>` +                          // 箭头 V
+  `<path d='M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6'/>` + // 方框(左右底,顶部开口)
+  `</svg>`
+);
+
+/**
  * 右下角浮动分享按钮(印章风格圆形 + 分享图标)。
  *
  * 交互:
@@ -117,15 +130,12 @@ export default function ShareFab({ onClick }: ShareFabProps) {
       catchMove
     >
       <View className="share-fab-inner">
-        {/* 系统默认分享图标:方框(底开口)+ 向上箭头(iOS/Android 通用样式) */}
-        <View className="share-fab-icon">
-          {/* 向上箭头:用边框拼三角形 */}
-          <View className="share-fab-arrow" />
-          {/* 箭杆 */}
-          <View className="share-fab-arrow-stem" />
-          {/* 方框:左右底三边(顶部开口让箭头穿过) */}
-          <View className="share-fab-box" />
-        </View>
+        {/* 系统默认分享图标:方框 + 向上箭头(iOS/Android/微信通用 share icon)
+            用内联 SVG data URI 渲染,比 CSS 拼图更精致圆润 */}
+        <View
+          className="share-fab-icon"
+          style={{ backgroundImage: `url("data:image/svg+xml,${SHARE_ICON_SVG}")` }}
+        />
       </View>
     </View>
   );
