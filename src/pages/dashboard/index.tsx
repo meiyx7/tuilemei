@@ -130,8 +130,9 @@ function SectionHeader({
   onShare,
 }: { eyebrow?: string; title: string; onShare?: () => void }) {
   // 简约分享图标(系统默认 share icon:方框+上箭头),墨色线条,与纸本主题一致
+  // 注意:# 用原始字符,encodeURIComponent 会统一编码,不能预编码成 %23 否则二次编码
   const SHARE_ICON = encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b6b6a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'>` +
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#5b6b6a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'>` +
     `<path d='M12 3v11'/><path d='M8 7l4-4 4 4'/><path d='M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6'/></svg>`
   );
   return (
