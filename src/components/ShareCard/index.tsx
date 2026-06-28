@@ -55,7 +55,7 @@ export default function ShareCard({
 
   // 卡片逻辑尺寸
   const CARD_W = 680;
-  const CARD_H = 1240;
+  const CARD_H = 1320;
 
   /** 获取小程序码图片(异步) */
   async function loadMiniCode(): Promise<string> {
@@ -133,9 +133,9 @@ export default function ShareCard({
 
       // 5. 圆环(Canvas arc 直接绘制,与首页 SVG 视觉一致)
       const ringCx = CARD_W / 2;
-      const ringCy = 300;
-      const ringR = 120;
-      const ringStroke = 16;
+      const ringCy = 350;
+      const ringR = 160;
+      const ringStroke = 18;
       // 底环
       ctx.strokeStyle = '#E2D9C3';
       ctx.lineWidth = ringStroke;
@@ -153,24 +153,24 @@ export default function ShareCard({
         ctx.arc(ringCx, ringCy, ringR, startA, endA);
         ctx.stroke();
       }
-      // 圆环内文字
+      // 圆环内文字(随圆环增大放大)
       ctx.textAlign = 'center';
       ctx.fillStyle = '#8a9796';
-      ctx.font = '20px serif';
-      ctx.fillText('已过', ringCx, ringCy - 30);
-      ctx.fillStyle = '#1c1a17';
-      ctx.font = 'bold 64px serif';
-      ctx.fillText(`${pct}`, ringCx, ringCy + 20);
       ctx.font = '24px serif';
+      ctx.fillText('已过', ringCx, ringCy - 42);
       ctx.fillStyle = '#1c1a17';
-      ctx.fillText('%', ringCx + 35, ringCy + 20);
-      ctx.font = '20px serif';
+      ctx.font = 'bold 84px serif';
+      ctx.fillText(`${pct}`, ringCx, ringCy + 28);
+      ctx.font = '30px serif';
+      ctx.fillStyle = '#1c1a17';
+      ctx.fillText('%', ringCx + 48, ringCy + 28);
+      ctx.font = '24px serif';
       ctx.fillStyle = '#8a9796';
-      ctx.fillText('职业生涯', ringCx, ringCy + 55);
+      ctx.fillText('职业生涯', ringCx, ringCy + 68);
 
       // 6. 倒计时数字区(固定坐标,不依赖 measureText 避免字体加载导致重叠)
       ctx.textAlign = 'left';
-      const cdY = 510;
+      const cdY = 590;
       // 今日日期 + 标签
       const d = new Date();
       const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
@@ -222,14 +222,24 @@ export default function ShareCard({
       }
 
       // 7. 分割线
-      drawAlmanacRule(ctx, 40, 740, CARD_W - 80);
+      drawAlmanacRule(ctx, 40, 810, CARD_W - 80);
+
+      // 7.5 进度轴标题(对齐首页 SectionHeader:进度轴 · Timeline / 从入职到退休)
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#8a9796';
+      ctx.font = '18px monospace';
+      ctx.fillText('进度轴 · Timeline', 40, 845);
+      ctx.fillStyle = '#1c1a17';
+      ctx.font = 'bold 36px serif';
+      ctx.fillText('从入职到退休', 40, 885);
+      drawAlmanacRule(ctx, 40, 905, CARD_W - 80);
 
       // 8. 时间轴(四个节点:参加工作、缴满15年、当前、法定退休,对齐首页)
       const minContribDate = minContributionDate(workStartDate, 15);
-      drawTimeline(ctx, 40, 780, CARD_W - 80, workStartDate, minContribDate, retirement.retirementDate);
+      drawTimeline(ctx, 40, 925, CARD_W - 80, workStartDate, minContribDate, retirement.retirementDate);
 
       // 9. 底部分割线
-      drawAlmanacRule(ctx, 40, 880, CARD_W - 80);
+      drawAlmanacRule(ctx, 40, 1030, CARD_W - 80);
 
       // 10. 小程序码 + 引导文案
       const codeUrl = await loadMiniCode();
@@ -240,8 +250,8 @@ export default function ShareCard({
           const img = canvas.createImage();
           await new Promise<void>((resolveImg) => {
             img.onload = () => {
-              const codeSize = 130;
-              ctx.drawImage(img, 40, 920, codeSize, codeSize);
+              const codeSize = 140;
+              ctx.drawImage(img, 40, 1060, codeSize, codeSize);
               codeDrawn = true;
               resolveImg();
             };
@@ -255,23 +265,23 @@ export default function ShareCard({
       ctx.textAlign = 'left';
       ctx.fillStyle = '#1c1a17';
       ctx.font = 'bold 28px serif';
-      ctx.fillText('扫码查看你的', 200, 960);
+      ctx.fillText('扫码查看你的', 210, 1100);
       ctx.fillStyle = '#5b6b6a';
       ctx.font = '22px serif';
-      ctx.fillText('退休进度与养老金测算', 200, 995);
+      ctx.fillText('退休进度与养老金测算', 210, 1135);
 
       // 二维码加载失败提示
       if (!codeDrawn) {
         ctx.fillStyle = '#e2d9c3';
         ctx.strokeStyle = '#e2d9c3';
         ctx.lineWidth = 1;
-        roundRect(ctx, 40, 920, 130, 130, 8);
+        roundRect(ctx, 40, 1060, 140, 140, 8);
         ctx.stroke();
         ctx.fillStyle = '#8a9796';
         ctx.font = '16px serif';
         ctx.textAlign = 'center';
-        ctx.fillText('小程序码', 105, 980);
-        ctx.fillText('加载失败', 105, 1005);
+        ctx.fillText('小程序码', 110, 1125);
+        ctx.fillText('加载失败', 110, 1150);
       }
 
       // 11. 底部品牌签名
