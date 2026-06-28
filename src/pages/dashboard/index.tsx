@@ -79,12 +79,6 @@ export default function Dashboard() {
         />
       </View>
 
-      {/* 分享入口：生成分享卡片图片保存到相册，绕过未认证线上版分享限制 */}
-      <View className="share-entry" onClick={() => setShareOpen(true)}>
-        <Text className="share-entry-text">生成分享卡片</Text>
-        <Text className="share-entry-arrow">›</Text>
-      </View>
-
       {/* 底部声明 */}
       <View className="footer">
         <View className="almanac-rule" />
@@ -97,6 +91,13 @@ export default function Dashboard() {
           v{APP_VERSION}
           {BUILD_TIME ? ` · ${formatBeijingTime(BUILD_TIME)}` : ''}
         </Text>
+      </View>
+
+      {/* 右下角浮动分享按钮(印章风格 FAB,不占文档流) */}
+      <View className="share-fab" onClick={() => setShareOpen(true)}>
+        <View className="share-fab-inner">
+          <Text className="share-fab-text">分享</Text>
+        </View>
       </View>
 
       {/* 首次使用引导 */}

@@ -488,27 +488,76 @@ function drawDecoStamp(ctx: any, cx: number, cy: number) {
   ctx.restore();
 }
 
-/** 右下角品牌印章:圆形红底 + 白色"退"字(替代文字签名,类似小程序头像) */
+/**
+ * 右下角古意印章:朱砂红 + 不规则毛边(模拟印章按压不均)+ 双圈内框
+ * + 篆体感"退"字 + 轻微旋转。用多段贝塞尔曲线画外圈,避免完美圆形,
+ * 并在边缘随机挖几个小缺口模拟墨迹不均。
+ */
 function drawBrandStamp(ctx: any, cx: number, cy: number) {
-  const r = 28;
-  // 红色圆形底
-  ctx.fillStyle = '#b23a2e';
+  const r = 30;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-6 * Math.PI / 180); // 轻微倾斜,盖章不可能正
+
+  // 1. 外圈毛边:用多段二次贝塞尔模拟不规则边缘(48 段,半径随机抖动)
+  ctx.fillStyle = '#9e2b21'; // 朱砂红(比 #b23a2e 更深沉古意)
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  const segments = 48;
+  for (let i = 0; i <= segments; i++) {
+    const a = (i / segments) * Math.PI * 2;
+    // 半径在 0.9r~1.08r 之间抖动,模拟墨迹毛糙
+    const jitter = 0.9 + Math.sin(i * 1.3) * 0.06 + (i % 3) * 0.04;
+    const rad = r * jitter;
+    const x = Math.cos(a) * rad;
+    const y = Math.sin(a) * rad;
+    if (i === 0) ctx.moveTo(x, y);
+    else {
+      // 用二次贝塞尔平滑,控制点稍微外推
+      const prevA = ((i - 1) / segments) * Math.PI * 2;
+      const cpRad = r * (1.05 + Math.sin(i * 0.7) * 0.03);
+      const cpx = Math.cos((a + prevA) / 2) * cpRad;
+      const cpy = Math.sin((a + prevA) / 2) * cpRad;
+      ctx.quadraticCurveTo(cpx, cpy, x, y);
+    }
+  }
+  ctx.closePath();
   ctx.fill();
-  // 内圈细线
-  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-  ctx.lineWidth = 1;
+
+  // 2. 局部缺口:挖掉几个小圆,模拟印章按压不均导致墨迹缺失
+  ctx.globalCompositeOperation = 'destination-out';
+  const gaps = [
+    { x: -r * 0.85, y: r * 0.2, rr: 3 },
+    { x: r * 0.7, y: -r * 0.75, rr: 2.5 },
+    { x: r * 0.3, y: r * 0.9, rr: 2 },
+    { x: -r * 0.5, y: -r * 0.8, rr: 1.8 },
+  ];
+  gaps.forEach((g) => {
+    ctx.beginPath();
+    ctx.arc(g.x, g.y, g.rr, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 3. 内框双线(古印常见样式)
+  ctx.strokeStyle = '#f4efe3';
+  ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.arc(cx, cy, r - 4, 0, Math.PI * 2);
+  ctx.arc(0, 0, r - 5, 0, Math.PI * 2);
   ctx.stroke();
-  // 白色"退"字
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 30px serif';
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  ctx.arc(0, 0, r - 8, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 4. 篆体感"退"字(用 serif 加粗模拟篆刻,白色阴文)
+  ctx.fillStyle = '#f4efe3';
+  ctx.font = 'bold 32px serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('退', cx, cy + 2);
+  ctx.fillText('退', 0, 2);
   ctx.textBaseline = 'alphabetic';
+
+  ctx.restore();
 }
 
 /**
