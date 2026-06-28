@@ -44,56 +44,48 @@
   justify-content: center;
 }
 
-/* 分享图标容器:相对定位,内部三节点 + 两连线绝对定位拼图 */
+/* 系统默认分享图标容器:方框 + 向上箭头(iOS/Android 通用 share icon) */
 .share-fab-icon {
   position: relative;
-  width: 44rpx;
+  width: 40rpx;
   height: 44rpx;
 }
 
-/* 三个圆形节点(白色阴文),直径 12rpx */
-.share-fab-dot {
+/* 向上箭头:用 border 拼三角形(朝上的 V),白色 */
+.share-fab-arrow {
   position: absolute;
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  background: #f4efe3;
-}
-/* 左上节点 */
-.share-fab-dot-1 {
-  left: 0;
-  top: 4rpx;
-}
-/* 右上节点 */
-.share-fab-dot-2 {
-  right: 0;
+  left: 50%;
   top: 0;
-}
-/* 右下节点 */
-.share-fab-dot-3 {
-  right: 4rpx;
-  bottom: 0;
+  width: 0;
+  height: 0;
+  border-left: 10rpx solid transparent;
+  border-right: 10rpx solid transparent;
+  border-bottom: 12rpx solid #f4efe3;
+  transform: translateX(-50%);
 }
 
-/* 两条连线:细矩形,旋转连接节点。
-   line1 连 dot1-dot2(左上↔右上),line2 连 dot2-dot3(右上↔右下) */
-.share-fab-line {
+/* 箭杆:从箭头底部向下延伸的竖线 */
+.share-fab-arrow-stem {
   position: absolute;
-  height: 2rpx;
-  background: #f4efe3;
-  transform-origin: left center;
-}
-/* line1:从 dot1 中心(6,10) 到 dot2 中心(38,6),水平距离 32,垂直差 -4 */
-.share-fab-line-1 {
-  left: 6rpx;
+  left: 50%;
   top: 10rpx;
-  width: 33rpx;
-  transform: rotate(-7deg);
+  width: 3rpx;
+  height: 16rpx;
+  background: #f4efe3;
+  transform: translateX(-50%);
 }
-/* line2:从 dot2 中心(38,6) 到 dot3 中心(34,38),水平距离 -4,垂直差 32 */
-.share-fab-line-2 {
-  left: 38rpx;
-  top: 6rpx;
-  width: 33rpx;
-  transform: rotate(97deg);
+
+/* 方框:左右底三边(顶部开口让箭头穿过),用 border 只画左/右/底 */
+.share-fab-box {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 40rpx;
+  height: 28rpx;
+  border-left: 3rpx solid #f4efe3;
+  border-right: 3rpx solid #f4efe3;
+  border-bottom: 3rpx solid #f4efe3;
+  border-top: none;
+  box-sizing: border-box;
 }
+

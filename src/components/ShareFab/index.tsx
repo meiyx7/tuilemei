@@ -117,15 +117,14 @@ export default function ShareFab({ onClick }: ShareFabProps) {
       catchMove
     >
       <View className="share-fab-inner">
-        {/* 分享图标:三节点连线式(通用分享语义),白色描边,纸本印章风格 */}
+        {/* 系统默认分享图标:方框(底开口)+ 向上箭头(iOS/Android 通用样式) */}
         <View className="share-fab-icon">
-          {/* 三个节点:左上、右上、右下 */}
-          <View className="share-fab-dot share-fab-dot-1" />
-          <View className="share-fab-dot share-fab-dot-2" />
-          <View className="share-fab-dot share-fab-dot-3" />
-          {/* 两条连线 */}
-          <View className="share-fab-line share-fab-line-1" />
-          <View className="share-fab-line share-fab-line-2" />
+          {/* 向上箭头:用边框拼三角形 */}
+          <View className="share-fab-arrow" />
+          {/* 箭杆 */}
+          <View className="share-fab-arrow-stem" />
+          {/* 方框:左右底三边(顶部开口让箭头穿过) */}
+          <View className="share-fab-box" />
         </View>
       </View>
     </View>
