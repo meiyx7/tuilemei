@@ -96,6 +96,10 @@ export async function saveCloudData(data: CloudUserData): Promise<void> {
  * 调用 getMiniCode 云函数生成小程序码并上传云存储，返回 fileID；
  * 再用 wx.cloud.getTempFileURL 换成可绘制的临时路径。
  * 失败时返回空字符串，分享卡片会跳过二维码绘制。
+ *
+ * 常见失败原因：
+ * - FUNCTION_NOT_FOUND (-501000)：云函数未部署，需在开发者工具右键
+ *   cloudfunctions/getMiniCode → 「上传并部署:云端安装依赖」
  */
 export async function getMiniCodeImage(): Promise<string> {
   if (!cloudReady) return '';
@@ -112,8 +116,13 @@ export async function getMiniCodeImage(): Promise<string> {
     const urlRes = await (wx as any).cloud.getTempFileURL({ fileList: [fileID] });
     const url = urlRes?.fileList?.[0]?.tempFileURL;
     return url || '';
-  } catch (e) {
-    console.warn('[cloud] 获取小程序码失败', e);
+  } catch (e: any) {
+    const errMsg = String(e?.errMsg || e?.message || e);
+    if (errMsg.includes('FUNCTION_NOT_FOUND') || errMsg.includes('-501000')) {
+      console.error('[cloud] 云函数 getMiniCode 未部署!请在微信开发者工具右键 cloudfunctions/getMiniCode → 上传并部署:云端安装依赖');
+    } else {
+      console.warn('[cloud] 获取小程序码失败', e);
+    }
     return '';
   }
 }

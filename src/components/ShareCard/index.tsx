@@ -119,15 +119,15 @@ export default function ShareCard({
       // 3. 右上角装饰邮戳
       drawDecoStamp(ctx, CARD_W - 70, 70);
 
-      // 4. 顶部标题区
+      // 4. 顶部标题区(对齐首页:退休进度 · Countdown + 今天您退了没)
       ctx.textAlign = 'left';
       ctx.fillStyle = '#8a9796';
       ctx.font = '18px monospace';
-      ctx.fillText('RETIREMENT COUNTDOWN', 40, 65);
+      ctx.fillText('退休进度 · Countdown', 40, 65);
 
       ctx.fillStyle = '#1c1a17';
       ctx.font = 'bold 42px serif';
-      ctx.fillText('退了没', 40, 110);
+      ctx.fillText('今天您退了没', 40, 110);
 
       drawAlmanacRule(ctx, 40, 140, CARD_W - 80);
 
@@ -184,46 +184,49 @@ export default function ShareCard({
         ctx.font = 'bold 88px serif';
         ctx.fillText('到点了', 40, cdY + 90);
       } else {
-        // 大数字:年 月(固定坐标排列,避免重叠)
+        // 大数字:年 月(缩小字号确保年月+约天数一行内放下)
         const years = String(pension.remaining.years).padStart(2, '0');
         const months = String(pension.remaining.months).padStart(2, '0');
-        // 年
+        // 年(大)
         ctx.fillStyle = '#1c1a17';
-        ctx.font = 'bold 110px serif';
-        ctx.fillText(years, 40, cdY + 95);
-        ctx.font = '32px serif';
-        ctx.fillStyle = '#5b6b6a';
-        ctx.fillText('年', 175, cdY + 95);
-        // 月
-        ctx.font = 'bold 80px serif';
-        ctx.fillStyle = '#1c1a17';
-        ctx.fillText(months, 230, cdY + 95);
+        ctx.font = 'bold 96px serif';
+        ctx.fillText(years, 40, cdY + 85);
         ctx.font = '28px serif';
         ctx.fillStyle = '#5b6b6a';
-        ctx.fillText('月', 320, cdY + 95);
-        // 约天数
+        ctx.fillText('年', 155, cdY + 85);
+        // 月(小)
+        ctx.font = 'bold 64px serif';
+        ctx.fillStyle = '#1c1a17';
+        ctx.fillText(months, 205, cdY + 85);
+        ctx.font = '24px serif';
+        ctx.fillStyle = '#5b6b6a';
+        ctx.fillText('月', 285, cdY + 85);
+        // 约天数(同一行,接在月后面)
         ctx.font = '22px monospace';
         ctx.fillStyle = '#5b6b6a';
-        ctx.fillText(`· 约 ${formatMoney(pension.remaining.totalDays)} 天`, 40, cdY + 130);
+        ctx.fillText(`· 约 ${formatMoney(pension.remaining.totalDays)} 天`, 330, cdY + 85);
       }
 
-      // 法定退休年龄
+      // 法定退休年龄 + 延迟信息(同一行,对齐首页 age-line 布局)
       const ageY = cdY + 175;
       ctx.font = '22px serif';
       ctx.fillStyle = '#5b6b6a';
       const ageText = `法定退休年龄 ${retirement.years} 岁${retirement.months > 0 ? ` ${retirement.months} 个月` : ''}`;
       ctx.fillText(ageText, 40, ageY);
       if (retirement.delayed) {
+        // 延迟信息接在年龄后面同一行(对齐首页 age-line 的 flex-wrap 布局)
+        const ageW = ctx.measureText(ageText).width;
         ctx.fillStyle = '#c8893b';
         ctx.font = '20px monospace';
-        ctx.fillText(`(延迟 ${retirement.delayedMonths} 个月)`, 40, ageY + 30);
+        ctx.fillText(`(延迟 ${retirement.delayedMonths} 个月)`, 40 + ageW + 8, ageY);
       }
 
       // 7. 分割线
       drawAlmanacRule(ctx, 40, 740, CARD_W - 80);
 
-      // 8. 时间轴(三个节点:参加工作、当前、法定退休)
-      drawTimeline(ctx, 40, 780, CARD_W - 80, workStartDate, retirement.retirementDate);
+      // 8. 时间轴(四个节点:参加工作、缴满15年、当前、法定退休,对齐首页)
+      const minContribDate = minContributionDate(workStartDate, 15);
+      drawTimeline(ctx, 40, 780, CARD_W - 80, workStartDate, minContribDate, retirement.retirementDate);
 
       // 9. 底部分割线
       drawAlmanacRule(ctx, 40, 880, CARD_W - 80);
@@ -434,8 +437,9 @@ function drawDecoStamp(ctx: any, cx: number, cy: number) {
 }
 
 /**
- * 绘制时间轴(三个节点:参加工作、当前、法定退休)
- * 横线穿过节点圆点中心,与首页时间轴视觉一致。
+ * 绘制时间轴(四个节点:参加工作、缴满15年、当前、法定退休)
+ * 节点样式对齐首页:外圆(边框)+ 内圆点,过去=印章红,当前=琥珀金,未来=灰。
+ * 横线穿过外圆中心。
  */
 function drawTimeline(
   ctx: any,
@@ -443,75 +447,105 @@ function drawTimeline(
   y: number,
   w: number,
   workStartDate: string,
+  minContribDate: string,
   retirementDate: string,
 ) {
   const nowYm = todayYm();
+  const nowMonths = ymToMonths(nowYm);
   const nodes = [
-    { label: '参加工作', date: workStartDate, past: true, current: false },
-    { label: '当前', date: nowYm, past: true, current: true },
-    { label: '法定退休', date: retirementDate, past: false, current: false },
-  ];
+    { label: '参加工作', date: workStartDate },
+    { label: '缴满 15 年', date: minContribDate },
+    { label: '当前', date: nowYm, current: true },
+    { label: '法定退休', date: retirementDate },
+  ].map((n) => ({
+    ...n,
+    past: ymToMonths(n.date) <= nowMonths,
+    current: n.current ?? false,
+  }));
 
-  // 三个节点的 x 坐标(均匀分布)
-  const positions = [x + 20, x + w / 2, x + w - 20];
-  const dotY = y + 10;
+  // 四个节点均匀分布
+  const count = nodes.length;
+  const positions = nodes.map((_, i) => x + (w * (i + 0.5)) / count);
+  const dotY = y + 24; // 外圆中心(外圆半径 24,从 y 开始)
 
-  // 横线(穿过圆点中心)
+  // 横线(穿过外圆中心)
   ctx.strokeStyle = '#e2d9c3';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(positions[0], dotY);
-  ctx.lineTo(positions[2], dotY);
+  ctx.lineTo(positions[count - 1], dotY);
   ctx.stroke();
 
-  // 进度线(当前节点之前的部分用琥珀色)
-  ctx.strokeStyle = '#c8893b';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(positions[0], dotY);
-  ctx.lineTo(positions[1], dotY);
-  ctx.stroke();
+  // 进度线(到当前节点为止用琥珀色)
+  const currentIdx = nodes.findIndex((n) => n.current);
+  if (currentIdx > 0) {
+    ctx.strokeStyle = '#c8893b';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(positions[0], dotY);
+    ctx.lineTo(positions[currentIdx], dotY);
+    ctx.stroke();
+  }
 
-  // 节点圆点
+  // 节点:外圆(边框) + 内圆点(对齐首页 tl-dot-wrap + tl-dot 结构)
+  const outerR = 24;  // 外圆半径(对应首页 56rpx)
+  const innerR = 8;   // 内圆点半径(对应首页 16rpx)
   nodes.forEach((node, i) => {
     const cx = positions[i];
-    if (node.current) {
-      // 当前:印章红实心 + 外环
-      ctx.fillStyle = '#b23a2e';
-      ctx.beginPath();
-      ctx.arc(cx, dotY, 8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#b23a2e';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(cx, dotY, 12, 0, Math.PI * 2);
-      ctx.stroke();
-    } else if (node.past) {
-      // 过去:琥珀金实心
-      ctx.fillStyle = '#c8893b';
-      ctx.beginPath();
-      ctx.arc(cx, dotY, 7, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      // 未来:空心
-      ctx.fillStyle = '#f4efe3';
-      ctx.strokeStyle = '#c8893b';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(cx, dotY, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
 
-    // 标签
+    // 外圆
+    if (node.current) {
+      ctx.fillStyle = '#c8893b'; // 琥珀金填充(tl-dot-current)
+      ctx.strokeStyle = '#c8893b';
+    } else if (node.past) {
+      ctx.fillStyle = '#fbf8f0'; // 卡片底色(tl-dot-past 只改边框)
+      ctx.strokeStyle = '#b23a2e'; // 印章红边框
+    } else {
+      ctx.fillStyle = '#fbf8f0'; // 卡片底色
+      ctx.strokeStyle = '#e2d9c3'; // 灰边框
+    }
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(cx, dotY, outerR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // 内圆点
+    if (node.current) {
+      ctx.fillStyle = '#f4efe3'; // paper(tl-dot-in-current)
+    } else if (node.past) {
+      ctx.fillStyle = '#b23a2e'; // 印章红(tl-dot-in-past)
+    } else {
+      ctx.fillStyle = '#8a9796'; // 灰(tl-dot-in-future)
+    }
+    ctx.beginPath();
+    ctx.arc(cx, dotY, innerR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 标签(对齐首页:当前琥珀金/过去墨黑/未来灰)
     ctx.textAlign = 'center';
-    ctx.font = '20px serif';
-    ctx.fillStyle = node.current ? '#b23a2e' : node.past ? '#1c1a17' : '#8a9796';
-    ctx.fillText(node.label, cx, dotY + 28);
+    ctx.font = '600 20px serif';
+    ctx.fillStyle = node.current ? '#c8893b' : node.past ? '#1c1a17' : '#5b6b6a';
+    ctx.fillText(node.label, cx, dotY + outerR + 24);
 
     // 日期
     ctx.font = '16px monospace';
-    ctx.fillStyle = '#8a9796';
-    ctx.fillText(node.date, cx, dotY + 50);
+    ctx.fillStyle = '#5b6b6a';
+    ctx.fillText(node.date, cx, dotY + outerR + 46);
   });
+}
+
+/** 年月转月数(与首页 ymToMonths 一致) */
+function ymToMonths(ym: string): number {
+  const [y, m] = ym.split('-').map(Number);
+  return y * 12 + m;
+}
+
+/** 缴满 N 年的月份(与首页 minContributionDate 一致) */
+function minContributionDate(workStart: string, years: number): string {
+  const [y, m] = workStart.split('-').map(Number);
+  const total = y * 12 + (m - 1) + years * 12;
+  const ny = Math.floor(total / 12);
+  const nm = (total % 12) + 1;
+  return `${ny}-${String(nm).padStart(2, '0')}`;
 }
