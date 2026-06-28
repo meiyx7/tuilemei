@@ -284,8 +284,8 @@ export default function ShareCard({
         ctx.fillText('加载失败', 110, 1150);
       }
 
-      // 11. 右下角印章风格图标(圆形红底白字"退",替代文字签名)
-      drawBrandStamp(ctx, CARD_W - 70, CARD_H - 70);
+      // 11. 右下角品牌图标:印章红圆 + 进度环 + 咖啡杯(退休享受语义)
+      drawBrandStamp(ctx, CARD_W - 85, CARD_H - 85);
 
       // 12. 导出图片
       await new Promise<void>((resolveExport) => {
@@ -489,32 +489,30 @@ function drawDecoStamp(ctx: any, cx: number, cy: number) {
 }
 
 /**
- * 右下角古意印章:朱砂红 + 不规则毛边(模拟印章按压不均)+ 双圈内框
- * + 篆体感"退"字 + 轻微旋转。用多段贝塞尔曲线画外圈,避免完美圆形,
- * 并在边缘随机挖几个小缺口模拟墨迹不均。
+ * 右下角品牌图标:印章红圆(毛边+缺口)+ 内部进度环 + 咖啡杯。
+ * 进度环(灰底+橙前景)与首页圆环语义一致,咖啡杯代表退休享受,
+ * 整体白色阴文,与纸本印章风格统一。
  */
 function drawBrandStamp(ctx: any, cx: number, cy: number) {
-  const r = 30;
+  const r = 55;
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate(-6 * Math.PI / 180); // 轻微倾斜,盖章不可能正
+  ctx.rotate(-4 * Math.PI / 180); // 轻微倾斜,盖章不可能正
 
-  // 1. 外圈毛边:用多段二次贝塞尔模拟不规则边缘(48 段,半径随机抖动)
-  ctx.fillStyle = '#9e2b21'; // 朱砂红(比 #b23a2e 更深沉古意)
+  // 1. 外圈朱砂红毛边:多段二次贝塞尔模拟不规则边缘
+  ctx.fillStyle = '#9e2b21';
   ctx.beginPath();
   const segments = 48;
   for (let i = 0; i <= segments; i++) {
     const a = (i / segments) * Math.PI * 2;
-    // 半径在 0.9r~1.08r 之间抖动,模拟墨迹毛糙
-    const jitter = 0.9 + Math.sin(i * 1.3) * 0.06 + (i % 3) * 0.04;
+    const jitter = 0.92 + Math.sin(i * 1.3) * 0.05 + (i % 3) * 0.03;
     const rad = r * jitter;
     const x = Math.cos(a) * rad;
     const y = Math.sin(a) * rad;
     if (i === 0) ctx.moveTo(x, y);
     else {
-      // 用二次贝塞尔平滑,控制点稍微外推
       const prevA = ((i - 1) / segments) * Math.PI * 2;
-      const cpRad = r * (1.05 + Math.sin(i * 0.7) * 0.03);
+      const cpRad = r * (1.03 + Math.sin(i * 0.7) * 0.03);
       const cpx = Math.cos((a + prevA) / 2) * cpRad;
       const cpy = Math.sin((a + prevA) / 2) * cpRad;
       ctx.quadraticCurveTo(cpx, cpy, x, y);
@@ -523,13 +521,13 @@ function drawBrandStamp(ctx: any, cx: number, cy: number) {
   ctx.closePath();
   ctx.fill();
 
-  // 2. 局部缺口:挖掉几个小圆,模拟印章按压不均导致墨迹缺失
+  // 2. 局部缺口(destination-out 挖小圆模拟按压不均)
   ctx.globalCompositeOperation = 'destination-out';
   const gaps = [
-    { x: -r * 0.85, y: r * 0.2, rr: 3 },
-    { x: r * 0.7, y: -r * 0.75, rr: 2.5 },
-    { x: r * 0.3, y: r * 0.9, rr: 2 },
-    { x: -r * 0.5, y: -r * 0.8, rr: 1.8 },
+    { x: -r * 0.88, y: r * 0.15, rr: 3.5 },
+    { x: r * 0.72, y: -r * 0.72, rr: 3 },
+    { x: r * 0.25, y: r * 0.92, rr: 2.5 },
+    { x: -r * 0.5, y: -r * 0.82, rr: 2 },
   ];
   gaps.forEach((g) => {
     ctx.beginPath();
@@ -538,24 +536,82 @@ function drawBrandStamp(ctx: any, cx: number, cy: number) {
   });
   ctx.globalCompositeOperation = 'source-over';
 
-  // 3. 内框双线(古印常见样式)
+  // 3. 内框双圈(古印样式,白色阴文)
   ctx.strokeStyle = '#f4efe3';
-  ctx.lineWidth = 1.2;
+  ctx.lineWidth = 1.4;
   ctx.beginPath();
-  ctx.arc(0, 0, r - 5, 0, Math.PI * 2);
+  ctx.arc(0, 0, r - 6, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.lineWidth = 0.6;
+  ctx.lineWidth = 0.7;
   ctx.beginPath();
-  ctx.arc(0, 0, r - 8, 0, Math.PI * 2);
+  ctx.arc(0, 0, r - 10, 0, Math.PI * 2);
   ctx.stroke();
 
-  // 4. 篆体感"退"字(用 serif 加粗模拟篆刻,白色阴文)
+  // 4. 进度环(灰底 + 橙前景,与首页圆环语义一致,白色阴文色调)
+  const ringR = 26;
+  const ringStroke = 5;
+  // 底环(纸本灰)
+  ctx.strokeStyle = '#f4efe3';
+  ctx.globalAlpha = 0.35;
+  ctx.lineWidth = ringStroke;
+  ctx.beginPath();
+  ctx.arc(0, -2, ringR, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  // 前景环(约 77% 进度,倒计时语义)
+  ctx.strokeStyle = '#f4efe3';
+  ctx.lineWidth = ringStroke;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  const pct = 0.77;
+  ctx.arc(0, -2, ringR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct);
+  ctx.stroke();
+
+  // 5. 咖啡杯(白色阴文,代表退休享受)
+  drawCoffeeCup(ctx, 0, 0);
+
+  ctx.restore();
+}
+
+/**
+ * 画一个简约咖啡杯(白色阴文):杯身梯形 + 杯把 + 两缕热气。
+ * 中心在 (cx, cy),整体约 24×24。
+ */
+function drawCoffeeCup(ctx: any, cx: number, cy: number) {
+  ctx.save();
+  ctx.translate(cx, cy);
   ctx.fillStyle = '#f4efe3';
-  ctx.font = 'bold 32px serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('退', 0, 2);
-  ctx.textBaseline = 'alphabetic';
+  ctx.strokeStyle = '#f4efe3';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // 杯身:梯形(上宽下窄)
+  ctx.beginPath();
+  ctx.moveTo(-7, -3);
+  ctx.lineTo(-5, 8);
+  ctx.lineTo(5, 8);
+  ctx.lineTo(7, -3);
+  ctx.closePath();
+  ctx.fill();
+
+  // 杯把:右侧半圆
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(7, -1);
+  ctx.quadraticCurveTo(13, 0, 13, 3);
+  ctx.quadraticCurveTo(13, 6, 7, 6);
+  ctx.stroke();
+
+  // 热气:两缕波浪线
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(-3, -7);
+  ctx.quadraticCurveTo(-1, -10, -3, -13);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(3, -7);
+  ctx.quadraticCurveTo(5, -10, 3, -13);
+  ctx.stroke();
 
   ctx.restore();
 }
