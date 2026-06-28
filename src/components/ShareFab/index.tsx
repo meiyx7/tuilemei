@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text } from '@tarojs/components';
+import { View } from '@tarojs/components';
 import type { ITouchEvent } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import './index.scss';
@@ -9,7 +9,7 @@ interface ShareFabProps {
 }
 
 /**
- * 右下角浮动分享按钮(印章风格胶囊)。
+ * 右下角浮动分享按钮(印章风格圆形 + 分享图标)。
  *
  * 交互:
  *  - 可拖动:onTouchStart/Move/End 记录位置,松手吸附到最近左/右边缘
@@ -17,10 +17,10 @@ interface ShareFabProps {
  *  - 自动半隐藏:静止 3 秒后向边缘方向多滑半个身位,透明度降低
  *  - 触摸即唤醒:恢复完整显示并重新计时
  *
- * 视觉:半透明朱砂红胶囊,"分享"二字横排白字阴文,印章风格内框。
+ * 视觉:半透明朱砂红圆形,内嵌分享图标(三节点连线式 SVG,白线阴文),
+ * 印章风格双圈内框。一眼可辨是分享按钮。
  */
-const FAB_W_RPX = 132;
-const FAB_H_RPX = 76;
+const FAB_SIZE_RPX = 96;
 const EDGE_RPX = 24;
 const HIDE_DELAY = 3000;
 
@@ -50,15 +50,14 @@ export default function ShareFab({ onClick }: ShareFabProps) {
 
   // rpx -> px(按当前窗口宽度换算)
   const px = (rpx: number) => (rpx / 750) * win.w;
-  const fabW = px(FAB_W_RPX);
-  const fabH = px(FAB_H_RPX);
+  const fabSize = px(FAB_SIZE_RPX);
   const edge = px(EDGE_RPX);
-  const initialX = win.w - fabW - edge;
-  const initialY = win.h - fabH - px(140);
+  const initialX = win.w - fabSize - edge;
+  const initialY = win.h - fabSize - px(140);
   const curX = pos?.x ?? initialX;
   const curY = pos?.y ?? initialY;
-  const onLeft = curX + fabW / 2 < win.w / 2;
-  const hiddenOffsetX = hidden ? (onLeft ? -fabW / 2 : fabW / 2) : 0;
+  const onLeft = curX + fabSize / 2 < win.w / 2;
+  const hiddenOffsetX = hidden ? (onLeft ? -fabSize / 2 : fabSize / 2) : 0;
 
   function onTouchStart(e: ITouchEvent) {
     const t = e.touches?.[0];
@@ -83,8 +82,8 @@ export default function ShareFab({ onClick }: ShareFabProps) {
     // 边界约束:左右各允许露出半个身位,上下不超出视口
     let nx = dragRef.current.originX + dx;
     let ny = dragRef.current.originY + dy;
-    nx = Math.max(-fabW / 2, Math.min(win.w - fabW / 2, nx));
-    ny = Math.max(0, Math.min(win.h - fabH, ny));
+    nx = Math.max(-fabSize / 2, Math.min(win.w - fabSize / 2, nx));
+    ny = Math.max(0, Math.min(win.h - fabSize, ny));
     setPos({ x: nx, y: ny });
   }
 
@@ -97,8 +96,8 @@ export default function ShareFab({ onClick }: ShareFabProps) {
       return;
     }
     // 拖动结束:吸附到最近左/右边缘
-    const centerX = curX + fabW / 2;
-    const snapX = centerX < win.w / 2 ? edge : win.w - fabW - edge;
+    const centerX = curX + fabSize / 2;
+    const snapX = centerX < win.w / 2 ? edge : win.w - fabSize - edge;
     setPos({ x: snapX, y: curY });
     scheduleHide();
   }
@@ -109,8 +108,8 @@ export default function ShareFab({ onClick }: ShareFabProps) {
       style={{
         left: `${curX + hiddenOffsetX}px`,
         top: `${curY}px`,
-        width: `${fabW}px`,
-        height: `${fabH}px`,
+        width: `${fabSize}px`,
+        height: `${fabSize}px`,
       }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
@@ -118,7 +117,16 @@ export default function ShareFab({ onClick }: ShareFabProps) {
       catchMove
     >
       <View className="share-fab-inner">
-        <Text className="share-fab-text">分享</Text>
+        {/* 分享图标:三节点连线式(通用分享语义),白色描边,纸本印章风格 */}
+        <View className="share-fab-icon">
+          {/* 三个节点:左上、右上、右下 */}
+          <View className="share-fab-dot share-fab-dot-1" />
+          <View className="share-fab-dot share-fab-dot-2" />
+          <View className="share-fab-dot share-fab-dot-3" />
+          {/* 两条连线 */}
+          <View className="share-fab-line share-fab-line-1" />
+          <View className="share-fab-line share-fab-line-2" />
+        </View>
       </View>
     </View>
   );
