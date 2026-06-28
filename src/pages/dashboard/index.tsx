@@ -109,6 +109,8 @@ export default function Dashboard() {
         onClose={() => setShareOpen(false)}
         retirement={retirement}
         pension={pension}
+        careerProgress={careerProgress}
+        workStartDate={profile.workStartDate}
       />
     </View>
   );
