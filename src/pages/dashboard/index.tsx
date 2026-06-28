@@ -14,7 +14,6 @@ import CountdownHero from '@/components/CountdownHero';
 import ProfileModal from '@/components/ProfileModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import ShareCard from '@/components/ShareCard';
-import ShareFab from '@/components/ShareFab';
 import TopTab from '@/components/TopTab';
 import './index.scss';
 
@@ -60,7 +59,11 @@ export default function Dashboard() {
 
       {/* 倒计时主视觉 */}
       <View className="section">
-        <SectionHeader eyebrow="退休进度 · Countdown" title="今天您退了没" />
+        <SectionHeader
+          eyebrow="退休进度 · Countdown"
+          title="今天您退了没"
+          onShare={() => setShareOpen(true)}
+        />
         <CountdownHero
           retirement={retirement}
           pension={pension}
@@ -94,9 +97,6 @@ export default function Dashboard() {
         </Text>
       </View>
 
-      {/* 右下角浮动分享按钮:可拖动 + 静止 3s 自动半隐藏贴合边缘 */}
-      <ShareFab onClick={() => setShareOpen(true)} />
-
       {/* 首次使用引导 */}
       <OnboardingModal open={!onboarded} onClose={() => {}} />
       {/* 个人档案设置 */}
@@ -124,11 +124,29 @@ function minContributionDate(workStart: string, years: number): string {
 }
 
 /* ---------- 内联：章节标题 ---------- */
-function SectionHeader({ eyebrow, title }: { eyebrow?: string; title: string }) {
+function SectionHeader({
+  eyebrow,
+  title,
+  onShare,
+}: { eyebrow?: string; title: string; onShare?: () => void }) {
+  // 简约分享图标(系统默认 share icon:方框+上箭头),墨色线条,与纸本主题一致
+  const SHARE_ICON = encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b6b6a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'>` +
+    `<path d='M12 3v11'/><path d='M8 7l4-4 4 4'/><path d='M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6'/></svg>`
+  );
   return (
     <View className="section-header">
       {eyebrow && <Text className="eyebrow">{eyebrow}</Text>}
-      <Text className="section-title">{title}</Text>
+      <View className="section-title-row">
+        <Text className="section-title">{title}</Text>
+        {onShare && (
+          <View
+            className="section-share"
+            style={{ backgroundImage: `url("data:image/svg+xml,${SHARE_ICON}")` }}
+            onClick={onShare}
+          />
+        )}
+      </View>
       <View className="almanac-rule section-rule" />
     </View>
   );

@@ -78,6 +78,35 @@
   letter-spacing: 1rpx;
 }
 
+/* 标题行:标题靠左,分享图标靠右(仅倒计时 section 使用) */
+.section-title-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+/* 简约分享图标:墨色线条 SVG,点击区域 56rpx 保证可触 */
+.section-share {
+  flex-shrink: 0;
+  width: 40rpx;
+  height: 40rpx;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  /* 扩大点击热区到 56rpx,不影响视觉 */
+  margin: -8rpx;
+  padding: 8rpx;
+  box-sizing: content-box;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+
+  &:active {
+    opacity: 1;
+  }
+}
+
 .section-rule {
   margin-top: 4rpx;
   width: 100%;
