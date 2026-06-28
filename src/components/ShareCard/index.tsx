@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Canvas, Text, Button, Image } from '@tarojs/components';
+import { useState, useEffect } from 'react';
+import { View, Canvas, Text, Image } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { formatMoney, todayYm } from '@/lib/pension';
 import { getMiniCodeImage } from '@/lib/cloud';
@@ -284,11 +284,8 @@ export default function ShareCard({
         ctx.fillText('加载失败', 110, 1150);
       }
 
-      // 11. 底部品牌签名
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#b23a2e';
-      ctx.font = 'bold 20px serif';
-      ctx.fillText('退了没 · tuilemei', CARD_W - 40, CARD_H - 40);
+      // 11. 右下角印章风格图标(圆形红底白字"退",替代文字签名)
+      drawBrandStamp(ctx, CARD_W - 70, CARD_H - 70);
 
       // 12. 导出图片
       await new Promise<void>((resolveExport) => {
@@ -340,6 +337,45 @@ export default function ShareCard({
     }
   }
 
+  /** 直接分享给好友(调起微信分享图片菜单,无需保存到本地) */
+  async function handleShare() {
+    if (!tempPath) return;
+    try {
+      // showShareImageMenu:直接弹出微信分享菜单(转发好友/收藏/保存)
+      const wxApi = (wx as any);
+      if (typeof wxApi.showShareImageMenu === 'function') {
+        await wxApi.showShareImageMenu({ path: tempPath });
+      } else {
+        // 低版本基础库降级:提示保存后手动分享
+        Taro.showModal({
+          title: '分享提示',
+          content: '当前微信版本不支持直接分享图片,请先保存到相册,再从相册分享到朋友圈或好友',
+          confirmText: '保存到相册',
+          success: (r) => { if (r.confirm) handleSave(); },
+        });
+      }
+    } catch (e: any) {
+      // 未认证或权限不足时降级到保存相册
+      Taro.showModal({
+        title: '分享提示',
+        content: '直接分享暂不可用,请先保存到相册再分享',
+        confirmText: '保存到相册',
+        success: (r) => { if (r.confirm) handleSave(); },
+      });
+    }
+  }
+
+  // 打开弹框时自动生成图片(无需手动点击)
+  useEffect(() => {
+    if (!open) return;
+    setTempPath('');
+    setSaved(false);
+    // 延迟等待 Canvas 节点渲染完成
+    const timer = setTimeout(() => { drawCard(); }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -367,31 +403,37 @@ export default function ShareCard({
         ) : (
           <View className="share-placeholder">
             <Text className="share-placeholder-text">
-              {drawing ? '正在生成分享图...' : '点击下方按钮生成分享图'}
+              {drawing ? '正在生成分享图...' : '准备中...'}
             </Text>
           </View>
         )}
 
         <View className="share-actions">
-          <Button
-            className="share-btn share-btn-primary"
-            loading={drawing}
-            disabled={drawing}
-            onClick={drawCard}
+          {/* 主按钮:分享给好友(直接调起微信分享菜单,不用保存到本地) */}
+          <View
+            className={`share-btn share-btn-primary ${(!tempPath || drawing) ? 'share-btn-disabled' : ''}`}
+            onClick={() => { if (tempPath && !drawing) handleShare(); }}
           >
-            {tempPath ? '重新生成' : '生成分享图'}
-          </Button>
-          <Button
-            className="share-btn"
-            disabled={!tempPath || drawing}
-            onClick={handleSave}
+            <Text className="share-btn-text">分享给好友</Text>
+          </View>
+          {/* 次按钮:保存到相册 */}
+          <View
+            className={`share-btn ${(!tempPath || drawing) ? 'share-btn-disabled' : ''}`}
+            onClick={() => { if (tempPath && !drawing) handleSave(); }}
           >
-            {saved ? '已保存' : '保存到相册'}
-          </Button>
+            <Text className="share-btn-text">{saved ? '已保存' : '保存到相册'}</Text>
+          </View>
         </View>
 
+        {/* 重新生成(小入口,生成失败或想刷新时用) */}
+        {tempPath && !drawing && (
+          <View className="share-regen" onClick={drawCard}>
+            <Text className="share-regen-text">重新生成</Text>
+          </View>
+        )}
+
         <Text className="share-tip">
-          保存后可发朋友圈或微信群,长按图片可识别小程序码
+          点击「分享给好友」可直接转发,长按图片可识别小程序码
         </Text>
       </View>
     </View>
@@ -444,6 +486,29 @@ function drawDecoStamp(ctx: any, cx: number, cy: number) {
   ctx.font = '9px monospace';
   ctx.fillText('RETIREMENT', 0, 13);
   ctx.restore();
+}
+
+/** 右下角品牌印章:圆形红底 + 白色"退"字(替代文字签名,类似小程序头像) */
+function drawBrandStamp(ctx: any, cx: number, cy: number) {
+  const r = 28;
+  // 红色圆形底
+  ctx.fillStyle = '#b23a2e';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  // 内圈细线
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - 4, 0, Math.PI * 2);
+  ctx.stroke();
+  // 白色"退"字
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 30px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('退', cx, cy + 2);
+  ctx.textBaseline = 'alphabetic';
 }
 
 /**
