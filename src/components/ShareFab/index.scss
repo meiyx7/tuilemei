@@ -1,0 +1,52 @@
+@import '../../styles/tokens.scss';
+
+/* 右下角浮动分享按钮:印章风格,视觉弱化(尺寸 88rpx,半透明,克制阴影) */
+.share-fab {
+  position: fixed;
+  z-index: 50;
+  border-radius: 50%;
+  background: rgba(158, 43, 33, 0.82);
+  /* 弱化阴影:从原 3 层强投影改为单层柔和投影 + 内框 */
+  box-shadow:
+    0 2rpx 8rpx rgba(178, 58, 46, 0.18),
+    inset 0 0 0 1rpx rgba(244, 239, 227, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 轻微倾斜,盖印不可能正 */
+  transform: rotate(-6deg);
+  /* 吸附/半隐藏时平滑过渡,拖动时由 .share-fab-dragging 禁用 */
+  transition:
+    left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.3s ease;
+  opacity: 1;
+}
+
+.share-fab-dragging {
+  /* 拖动时禁用过渡,跟随手指无延迟 */
+  transition: none;
+}
+
+.share-fab-hidden {
+  /* 半隐藏:透明度降低,贴合边缘不抢眼 */
+  opacity: 0.5;
+}
+
+.share-fab-inner {
+  width: 74%;
+  height: 74%;
+  border-radius: 50%;
+  border: 1rpx solid rgba(244, 239, 227, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-fab-text {
+  font-family: $font-display;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #f4efe3;
+  letter-spacing: 1rpx;
+}

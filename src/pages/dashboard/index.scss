@@ -195,51 +195,6 @@
   white-space: nowrap;
 }
 
-/* 右下角浮动分享按钮(印章风格 FAB) */
-.share-fab {
-  position: fixed;
-  right: 40rpx;
-  bottom: calc(140rpx + env(safe-area-inset-bottom));
-  z-index: 50;
-  width: 104rpx;
-  height: 104rpx;
-  border-radius: 50%;
-  /* 毛边阴影:多层 box-shadow 模拟印章按压不均 */
-  box-shadow:
-    0 4rpx 12rpx rgba(178, 58, 46, 0.3),
-    0 2rpx 6rpx rgba(0, 0, 0, 0.1),
-    inset 0 0 0 2rpx rgba(244, 239, 227, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: $stamp;
-  /* 轻微倾斜,盖印不可能正 */
-  transform: rotate(-6deg);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.share-fab:active {
-  transform: rotate(-6deg) scale(0.92);
-  box-shadow:
-    0 2rpx 6rpx rgba(178, 58, 46, 0.3),
-    inset 0 0 0 2rpx rgba(244, 239, 227, 0.4);
-}
-.share-fab-inner {
-  width: 84rpx;
-  height: 84rpx;
-  border-radius: 50%;
-  border: 2rpx solid rgba(244, 239, 227, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.share-fab-text {
-  font-family: $font-display;
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #f4efe3;
-  letter-spacing: 2rpx;
-}
-
 /* 底部声明 */
 .footer {
   margin-top: 64rpx;

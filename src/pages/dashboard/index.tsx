@@ -14,6 +14,7 @@ import CountdownHero from '@/components/CountdownHero';
 import ProfileModal from '@/components/ProfileModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import ShareCard from '@/components/ShareCard';
+import ShareFab from '@/components/ShareFab';
 import TopTab from '@/components/TopTab';
 import './index.scss';
 
@@ -93,12 +94,8 @@ export default function Dashboard() {
         </Text>
       </View>
 
-      {/* 右下角浮动分享按钮(印章风格 FAB,不占文档流) */}
-      <View className="share-fab" onClick={() => setShareOpen(true)}>
-        <View className="share-fab-inner">
-          <Text className="share-fab-text">分享</Text>
-        </View>
-      </View>
+      {/* 右下角浮动分享按钮:可拖动 + 静止 3s 自动半隐藏贴合边缘 */}
+      <ShareFab onClick={() => setShareOpen(true)} />
 
       {/* 首次使用引导 */}
       <OnboardingModal open={!onboarded} onClose={() => {}} />
