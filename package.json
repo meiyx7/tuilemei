@@ -4,7 +4,7 @@
   "version": "0.4.0",
   "description": "退了没 —— 微信小程序版（Taro）",
   "scripts": {
-    "build:wx": "taro build --type weapp",
+    "build:wx": "taro build --type weapp && node scripts/fix-share-config.mjs",
     "dev:wx": "taro build --type weapp --watch",
     "upload:wx": "node scripts/upload-wx.mjs",
     "check": "tsc --noEmit"
