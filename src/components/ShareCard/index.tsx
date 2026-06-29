@@ -284,10 +284,7 @@ export default function ShareCard({
         ctx.fillText('加载失败', 110, 1150);
       }
 
-      // 11. 右下角品牌图标:进度环 + 咖啡杯(极简工具风,按设计稿 SVG 还原)
-      drawBrandStamp(ctx, CARD_W - 85, CARD_H - 85);
-
-      // 12. 导出图片
+      // 11. 导出图片(右下角不再放品牌图标,避免与小程序码视觉重复)
       await new Promise<void>((resolveExport) => {
         Taro.canvasToTempFilePath({
           canvas,
