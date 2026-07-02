@@ -91,8 +91,21 @@ async function generateMiniCode(scene: string, page: string): Promise<Uint8Array
 async function uploadToStorage(filename: string, bytes: Uint8Array): Promise<void> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SERVICE_ROLE_KEY");
+
+  // 诊断日志：确认 Secret 是否读到、值是否合法（不打全量，仅前缀+长度）
+  // service_role key 应以 sb_secret_ 开头；若为 undefined 或空，说明 Secret 未配置
+  console.log(
+    `[getMiniCode][diag] SUPABASE_URL=${supabaseUrl ? "OK" : "MISSING"} ` +
+    `SERVICE_ROLE_KEY=${serviceKey ? `len=${serviceKey.length} prefix=${serviceKey.slice(0, 10)}` : "MISSING"}`,
+  );
+
   if (!supabaseUrl || !serviceKey) {
-    throw new Error("SUPABASE_URL 或 SERVICE_ROLE_KEY 未配置");
+    throw new Error(`SUPABASE_URL 或 SERVICE_ROLE_KEY 未配置: url=${!!supabaseUrl} key=${!!serviceKey}`);
+  }
+  if (!serviceKey.startsWith("sb_secret_")) {
+    throw new Error(
+      `SERVICE_ROLE_KEY 值不合法，应以 sb_secret_ 开头，当前前缀=${serviceKey.slice(0, 15)}...`,
+    );
   }
 
   const uploadUrl = `${supabaseUrl}/storage/v1/object/${BUCKET}/${filename}`;
