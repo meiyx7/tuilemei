@@ -23,23 +23,30 @@ let anonKey = '';
 /** 当前用户 openid（wx.login 换取，用于隔离用户数据） */
 let currentOpenid = '';
 
+/** 云端登录状态 */
+export type CloudStatus = 'unconfigured' | 'login' | 'online' | 'offline';
+let cloudStatus: CloudStatus = 'unconfigured';
+
+/** 获取云端状态（供 UI 展示） */
+export function getCloudStatus(): CloudStatus {
+  return cloudStatus;
+}
+
 /** Supabase 是否已就绪（已配置且已登录） */
 export function isCloudReady(): boolean {
-  return supabaseUrl !== '' && currentOpenid !== '';
+  return cloudStatus === 'online';
 }
 
 /**
  * 当前后端名称，用于界面展示。
- * - Supabase：URL/key 已配置且已获取 openid
- * - Supabase (登录中)：已配置但尚未获取 openid
- * - 本地存储：未配置或初始化失败
  */
 export function getBackendLabel(): string {
-  if (supabaseUrl) {
-    if (currentOpenid) return 'Supabase';
-    return 'Supabase (登录中)';
+  switch (cloudStatus) {
+    case 'online': return 'Supabase';
+    case 'login': return 'Supabase (登录中)';
+    case 'offline': return 'Supabase (离线)';
+    default: return '本地存储';
   }
-  return '本地存储';
 }
 
 /**
@@ -51,10 +58,12 @@ export function initCloud(): void {
   const key = __SUPABASE_ANON_KEY__;
   if (!url || !key) {
     console.log('[cloud] 未配置 SUPABASE_URL/KEY，跳过云同步初始化（仍使用本地存储）');
+    cloudStatus = 'unconfigured';
     return;
   }
   supabaseUrl = url;
   anonKey = key;
+  cloudStatus = 'login';
   console.log(`[cloud] 已配置 Supabase REST API ${url}`);
 }
 
@@ -130,30 +139,42 @@ async function callEdgeFunction(name: string, body: unknown): Promise<{ data: un
   return supabaseRequest(`/functions/v1/${name}`, 'POST', body);
 }
 
+/** 登录结果 */
+export interface LoginResult {
+  success: boolean;
+  openid?: string;
+  /** 是否为网络类错误（可用于提示"网络恢复后自动同步"） */
+  networkError?: boolean;
+}
+
 /**
  * 用 wx.login 换取 openid。
  * 调 Supabase Edge Function wx-login，服务端持有 AppSecret 微信 jscode2session。
  */
-export async function loginWithWechat(): Promise<string> {
-  if (currentOpenid) return currentOpenid;
-  if (!supabaseUrl) return '';
+export async function loginWithWechat(): Promise<LoginResult> {
+  if (currentOpenid) return { success: true, openid: currentOpenid };
+  if (!supabaseUrl) return { success: false };
   try {
     const { code } = await Taro.login();
     if (!code) {
       console.warn('[cloud] wx.login 未返回 code');
-      return '';
+      cloudStatus = 'offline';
+      return { success: false };
     }
     const res = await callEdgeFunction('wx-login', { appid: APPID, code });
     if (res.data && (res.data as Record<string, unknown>).openid) {
       currentOpenid = (res.data as Record<string, string>).openid;
+      cloudStatus = 'online';
       console.log('[cloud] 已获取 openid');
-      return currentOpenid;
+      return { success: true, openid: currentOpenid };
     }
+    cloudStatus = 'offline';
     console.warn('[cloud] wx-login 未返回 openid', res.data || res.error);
-    return '';
+    return { success: false };
   } catch (e) {
+    cloudStatus = 'offline';
     console.warn('[cloud] wx.login 异常', e);
-    return '';
+    return { success: false, networkError: isNetworkError(e) };
   }
 }
 

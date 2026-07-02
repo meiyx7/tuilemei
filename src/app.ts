@@ -1,7 +1,8 @@
 import { PropsWithChildren } from 'react';
+import Taro from '@tarojs/taro';
 import { useLaunch } from '@tarojs/taro';
 import { useStore } from './store/useStore';
-import { initCloud, loginWithWechat } from './lib/cloud';
+import { initCloud, loginWithWechat, getCloudStatus } from './lib/cloud';
 import './app.scss';
 
 function App({ children }: PropsWithChildren<any>) {
@@ -14,27 +15,47 @@ function App({ children }: PropsWithChildren<any>) {
       const version = __APP_VERSION__ || '0.3.0';
       console.log(`退了没 v${version} 启动`);
 
-      // 初始化 Supabase 客户端（未配置 URL/key 或初始化失败时 no-op，回退纯本地存储）
+      // 初始化 Supabase（未配置 URL/key 时 no-op，回退纯本地存储）
       try {
         initCloud();
       } catch (e) {
         console.warn('[app] Supabase 初始化异常（已忽略，继续使用本地存储）', e);
       }
 
-      // 微信登录换 openid（Supabase 通过 openid 隔离用户数据），
-      // 完成后再从云端拉取该用户的数据。
-      // 异步执行，失败不影响启动。
-      (async () => {
-        try {
-          await loginWithWechat();
-        } catch (e) {
-          console.warn('[app] 微信登录换 openid 失败（已忽略）', e);
-        }
-        // 即使 openid 未拿到，hydrateFromCloud 内部会 no-op，不影响启动
-        useStore.getState().hydrateFromCloud().catch((e) => {
-          console.warn('[app] 云端数据拉取失败（已忽略）', e);
+      // 未配置 Supabase：静默走纯本地模式
+      if (getCloudStatus() === 'unconfigured') {
+        return;
+      }
+
+      // 已配置 Supabase：显示"登录中"，异步登录
+      Taro.showLoading({ title: '登录中...', mask: false });
+      loginWithWechat()
+        .then((result) => {
+          Taro.hideLoading();
+          if (result.success) {
+            // 登录成功：拉取云端数据，并提示"已同步"
+            useStore.getState().hydrateFromCloud().catch((e) => {
+              console.warn('[app] 云端数据拉取失败（已忽略）', e);
+            });
+            Taro.showToast({ title: '云端已同步', icon: 'success', duration: 1500 });
+          } else {
+            // 登录失败：使用本地缓存，网络恢复后下次启动会自动同步
+            Taro.showToast({
+              title: '使用本地缓存，网络恢复后自动同步',
+              icon: 'none',
+              duration: 2500,
+            });
+          }
+        })
+        .catch((e) => {
+          Taro.hideLoading();
+          console.warn('[app] Supabase 登录异常', e);
+          Taro.showToast({
+            title: '使用本地缓存，网络恢复后自动同步',
+            icon: 'none',
+            duration: 2500,
+          });
         });
-      })();
 
       // 检查小程序更新
       const updateManager = wx.getUpdateManager?.();
@@ -55,6 +76,7 @@ function App({ children }: PropsWithChildren<any>) {
     } catch (e) {
       // 兜底：启动逻辑任何异常都不应阻断渲染
       console.error('[app] 启动逻辑异常', e);
+      Taro.hideLoading();
     }
   });
 
