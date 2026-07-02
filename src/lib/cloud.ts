@@ -44,7 +44,7 @@ export function getBackendLabel(): string {
   switch (cloudStatus) {
     case 'online': return 'Supabase · Connected';
     case 'login': return 'Supabase · Connecting';
-    case 'offline': return 'SupaBase · Offline 仅本地存储';
+    case 'offline': return 'SupaBase · Offline · LocalStorage Only';
     default: return '本地存储';
   }
 }
