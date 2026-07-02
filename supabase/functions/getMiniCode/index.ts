@@ -13,7 +13,8 @@
 // 环境变量（Supabase 控制台 → Edge Functions → Secrets 配置）：
 //   WX_APP_SECRET —— 微信小程序 AppSecret
 //   SUPABASE_URL —— Supabase 项目 URL（控制台默认注入）
-//   SUPABASE_SERVICE_ROLE_KEY —— 服务端密钥（控制台默认注入，用于绕过 RLS 上传 Storage）
+//   SERVICE_ROLE_KEY —— 服务端密钥（需手动添加，Supabase 保留前缀不允许 SUPABASE_ 开头，
+//                       用于绕过 RLS 上传 Storage）
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
@@ -89,9 +90,9 @@ async function generateMiniCode(scene: string, page: string): Promise<Uint8Array
 /** 上传图片到 Supabase Storage，覆盖同名文件 */
 async function uploadToStorage(filename: string, bytes: Uint8Array): Promise<void> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const serviceKey = Deno.env.get("SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceKey) {
-    throw new Error("SUPABASE_URL 或 SUPABASE_SERVICE_ROLE_KEY 未配置");
+    throw new Error("SUPABASE_URL 或 SERVICE_ROLE_KEY 未配置");
   }
 
   const uploadUrl = `${supabaseUrl}/storage/v1/object/${BUCKET}/${filename}`;
