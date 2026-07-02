@@ -112,6 +112,7 @@ async function uploadToStorage(filename: string, bytes: Uint8Array): Promise<voi
   const resp = await fetch(uploadUrl, {
     method: "POST",
     headers: {
+      "apikey": serviceKey,
       "Authorization": `Bearer ${serviceKey}`,
       "Content-Type": "image/png",
       // x-upsert: true 让同名文件覆盖，避免重复上传堆积
