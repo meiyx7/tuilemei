@@ -1,5 +1,4 @@
 import { PropsWithChildren } from 'react';
-import Taro from '@tarojs/taro';
 import { useLaunch } from '@tarojs/taro';
 import { useStore } from './store/useStore';
 import { initCloud, loginWithWechat, getCloudStatus } from './lib/cloud';
@@ -27,35 +26,22 @@ function App({ children }: PropsWithChildren<any>) {
         return;
       }
 
-      // 已配置 Supabase：显示"登录中"，异步登录
-      Taro.showLoading({ title: '登录中...', mask: false });
-      loginWithWechat()
-        .then((result) => {
-          Taro.hideLoading();
-          if (result.success) {
-            // 登录成功：拉取云端数据，并提示"已同步"
-            useStore.getState().hydrateFromCloud().catch((e) => {
-              console.warn('[app] 云端数据拉取失败（已忽略）', e);
-            });
-            Taro.showToast({ title: '云端已同步', icon: 'success', duration: 1500 });
-          } else {
-            // 登录失败：使用本地缓存，网络恢复后下次启动会自动同步
-            Taro.showToast({
-              title: '使用本地缓存，网络恢复后自动同步',
-              icon: 'none',
-              duration: 2500,
-            });
-          }
-        })
-        .catch((e) => {
-          Taro.hideLoading();
-          console.warn('[app] Supabase 登录异常', e);
-          Taro.showToast({
-            title: '使用本地缓存，网络恢复后自动同步',
-            icon: 'none',
-            duration: 2500,
-          });
+      // 已配置 Supabase：异步登录，登录结果通过底部状态标签静默展示
+      // （登录中 → Supabase (登录中)；成功 → Supabase；失败 → Supabase (离线)）
+      // 无论成功失败都调用 hydrateFromCloud：内部会 set cloudReady=true 触发界面刷新
+      (async () => {
+        try {
+          await loginWithWechat();
+        } catch (e) {
+          console.warn('[app] Supabase 登录异常（已忽略）', e);
+        }
+        // hydrateFromCloud 内部会判断 isCloudReady：
+        //   - 登录成功：拉取云端数据并 LWW 合并
+        //   - 登录失败：直接 set cloudReady=true 触发界面刷新，保留本地数据
+        useStore.getState().hydrateFromCloud().catch((e) => {
+          console.warn('[app] 云端数据拉取失败（已忽略）', e);
         });
+      })();
 
       // 检查小程序更新
       const updateManager = wx.getUpdateManager?.();
@@ -76,7 +62,6 @@ function App({ children }: PropsWithChildren<any>) {
     } catch (e) {
       // 兜底：启动逻辑任何异常都不应阻断渲染
       console.error('[app] 启动逻辑异常', e);
-      Taro.hideLoading();
     }
   });
 

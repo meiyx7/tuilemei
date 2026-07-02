@@ -38,13 +38,13 @@ export function isCloudReady(): boolean {
 }
 
 /**
- * 当前后端名称，用于界面展示。
+ * 当前后端名称，用于界面展示（底部版本号旁的标注）。
  */
 export function getBackendLabel(): string {
   switch (cloudStatus) {
     case 'online': return 'Supabase';
-    case 'login': return 'Supabase (登录中)';
-    case 'offline': return 'Supabase (离线)';
+    case 'login': return 'Supabase · 登录中';
+    case 'offline': return 'Supabase · 离线';
     default: return '本地存储';
   }
 }
