@@ -6,7 +6,7 @@ import Taro from '@tarojs/taro';
 import type { ChangelogEntry, Checkin, Profile } from '@/lib/types';
 import { PROVINCE_AVG_SALARY, todayStr } from '@/lib/pension';
 import { quoteForDate } from '@/lib/quotes';
-import { loadCloudData, saveCloudData } from '@/lib/cloud';
+import { isCloudReady, loadCloudData, saveCloudData } from '@/lib/cloud';
 
 const SAMPLE_PROFILE: Profile = {
   birthDate: '1985-06',
@@ -159,8 +159,23 @@ export const useStore = create<StoreState>()(
       hydrateFromCloud: async () => {
         const cloud = await loadCloudData();
         if (!cloud) {
-          // 云未就绪或云端无数据：标记完成，保留本地状态
+          // 云未就绪或云端无数据：
+          // - 如果云未就绪（isCloudReady=false）：直接标记完成，保留本地
+          // - 如果云已就绪但云端无记录：说明是首次使用新后端，
+          //   主动把本地数据推上去，实现从旧后端/本地到 Supabase 的自动迁移
           set({ cloudReady: true });
+          if (isCloudReady()) {
+            const local = get();
+            if (local.onboarded || Object.keys(local.checkins).length > 0) {
+              console.log('[store] 云端无数据，主动推送本地数据到 Supabase（自动迁移）');
+              saveCloudData({
+                profile: local.profile,
+                checkins: local.checkins,
+                changelog: local.changelog,
+                onboarded: local.onboarded,
+              });
+            }
+          }
           return;
         }
         const local = get();
