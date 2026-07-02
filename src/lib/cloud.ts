@@ -58,15 +58,26 @@ export function initCloud(): void {
   console.log(`[cloud] 已配置 Supabase REST API ${url}`);
 }
 
+/** 是否为网络连接类错误（需要重试） */
+function isNetworkError(err: unknown): boolean {
+  const msg = String(err).toLowerCase();
+  return msg.includes('connection') ||
+    msg.includes('timeout') ||
+    msg.includes('net::err') ||
+    msg.includes('cronet');
+}
+
 /**
  * 封装 Taro.request 调用 Supabase REST API / Edge Functions。
  * 所有请求带上 apikey + Authorization header。
+ * 网络错误（connection closed/timeout）自动重试 2 次，间隔 1s。
  */
 async function supabaseRequest(
   path: string,
   method: 'GET' | 'POST' = 'GET',
   data?: unknown,
   extraHeaders?: Record<string, string>,
+  retryCount: number = 0,
 ): Promise<{ data: unknown; error?: string }> {
   if (!supabaseUrl || !anonKey) {
     return { data: null, error: 'Supabase 未配置' };
@@ -89,8 +100,26 @@ async function supabaseRequest(
     console.warn(`[cloud] Supabase 请求失败 ${res.statusCode}`, res.data);
     return { data: null, error: `HTTP ${res.statusCode}` };
   } catch (e) {
-    console.warn('[cloud] Supabase 请求异常', e);
-    return { data: null, error: String(e) };
+    const errMsg = String(e);
+    // 网络连接错误：自动重试（最多 2 次）
+    if (isNetworkError(e) && retryCount < 2) {
+      console.warn(`[cloud] Supabase 网络异常（将重试 ${retryCount + 1}/2）`, errMsg);
+      await new Promise(r => setTimeout(r, 1000));
+      return supabaseRequest(path, method, data, extraHeaders, retryCount + 1);
+    }
+    // 最终失败：给出明确提示
+    if (isNetworkError(e)) {
+      console.error(
+        '[cloud] Supabase 网络连接失败（已重试），请检查：\n' +
+        '  1. 微信后台 request 合法域名是否已添加 supabase.co\n' +
+        '  2. 体验版需重新扫码或重启小程序\n' +
+        '  3. 网络环境是否正常',
+        errMsg,
+      );
+    } else {
+      console.warn('[cloud] Supabase 请求异常', errMsg);
+    }
+    return { data: null, error: errMsg };
   }
 }
 
