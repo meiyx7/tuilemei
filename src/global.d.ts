@@ -4,7 +4,8 @@
 
 declare const __APP_VERSION__: string;
 declare const __BUILD_TIME__: string;
-declare const __CLOUD_ENV_ID__: string;
+declare const __SUPABASE_URL__: string;
+declare const __SUPABASE_ANON_KEY__: string;
 
 declare module '*.png';
 declare module '*.jpg';

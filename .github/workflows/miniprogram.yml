@@ -30,8 +30,9 @@ jobs:
 
       - name: 构建微信小程序
         env:
-          # 云开发环境 ID：未配置则禁用云同步，回退纯本地存储
-          CLOUD_ENV_ID: ${{ secrets.CLOUD_ENV_ID }}
+          # Supabase 配置：未配置则禁用云同步，回退纯本地存储
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: pnpm run build:wx
 
       - name: 上传产物

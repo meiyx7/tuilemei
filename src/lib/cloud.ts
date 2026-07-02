@@ -1,43 +1,92 @@
-// 退了没 —— 微信云开发封装（用户数据云端同步）
+// 退了没 —— Supabase 云端同步封装（用户数据云端同步 + 小程序码生成）
 //
-// 设计：纯客户端直连云数据库（无云函数），每用户一条记录在 `userData` 集合中，
-//      靠数据库的"仅创建者可读写"权限隔离。简单 LWW（Last-Write-Wins）合并策略。
+// 架构变化（相对微信云开发版）：
+//   - 微信云开发自动按 openid 隔离 → Supabase 用 openid 字段标识用户，
+//     RLS 策略限制每用户只能读写自己 openid 的记录
+//   - wx.cloud.database() → supabase.from('userData')
+//   - wx.cloud.callFunction → fetch 调用 Supabase Edge Function
+//   - wx.cloud.getTempFileURL → 小程序码直接由 Edge Function 返回 base64
 //
-// 优雅降级：未配置 __CLOUD_ENV_ID__ 或初始化失败时，所有方法 no-op，
-//          不影响本地存储流程。用户开通云开发并填入 envId 后即自动启用。
+// 优雅降级：未配置 __SUPABASE_URL__ 或初始化失败时，所有方法 no-op，
+//          不影响本地存储流程。
 
+import Taro from '@tarojs/taro';
+import { createClient } from '@supabase/supabase-js';
 import type { ChangelogEntry, Checkin, Profile } from './types';
 
 const COLLECTION = 'userData';
+const APPID = 'wx8c91ec8355347154';
 
-let cloudReady = false;
+let supabase: ReturnType<typeof createClient> | null = null;
+/** 当前用户 openid（wx.login 换取，用于隔离用户数据） */
+let currentOpenid = '';
 
-/** 云开发是否已就绪（已初始化且 envId 已配置） */
+/** Supabase 是否已就绪（已初始化且 URL/key 已配置） */
 export function isCloudReady(): boolean {
-  return cloudReady;
+  return supabase !== null && currentOpenid !== '';
 }
 
 /**
- * 初始化云开发。在 app.ts useLaunch 中调用一次。
- * envId 来自构建期常量 __CLOUD_ENV_ID__（config/index.ts 注入）。
+ * 初始化 Supabase 客户端。在 app.ts useLaunch 中调用一次。
+ * URL/key 来自构建期常量 __SUPABASE_URL__ / __SUPABASE_ANON_KEY__（config/index.ts 注入）。
  */
 export function initCloud(): void {
-  const envId = __CLOUD_ENV_ID__;
-  if (!envId) {
-    console.log('[cloud] 未配置 CLOUD_ENV_ID，跳过云开发初始化（仍使用本地存储）');
+  const url = __SUPABASE_URL__;
+  const anonKey = __SUPABASE_ANON_KEY__;
+  if (!url || !anonKey) {
+    console.log('[cloud] 未配置 SUPABASE_URL/KEY，跳过云同步初始化（仍使用本地存储）');
     return;
   }
   try {
-    const cloud = (wx as any).cloud;
-    if (!cloud) {
-      console.warn('[cloud] wx.cloud 不可用（非小程序环境或基础库版本过低）');
-      return;
-    }
-    cloud.init({ env: envId, traceUser: true });
-    cloudReady = true;
-    console.log(`[cloud] 已初始化云开发环境 ${envId}`);
+    supabase = createClient(url, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    console.log(`[cloud] 已初始化 Supabase 客户端 ${url}`);
   } catch (e) {
     console.warn('[cloud] 初始化失败', e);
+  }
+}
+
+/**
+ * 用 wx.login 换取 openid。
+ * 走 Supabase Edge Function（wx-login），由服务端用 AppSecret 调微信 jscode2session 接口。
+ * AppSecret 不进前端，仅存于 Edge Function 环境变量。
+ * 成功后缓存 openid，供后续数据隔离使用。
+ */
+export async function loginWithWechat(): Promise<string> {
+  if (currentOpenid) return currentOpenid;
+  if (!supabase) return '';
+  try {
+    const { code } = await Taro.login();
+    if (!code) {
+      console.warn('[cloud] wx.login 未返回 code');
+      return '';
+    }
+    // 调 Edge Function 换 openid（服务端持有 AppSecret）
+    const url = __SUPABASE_URL__;
+    const resp = await fetch(`${url}/functions/v1/wx-login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${__SUPABASE_ANON_KEY__}`,
+      },
+      body: JSON.stringify({ appid: APPID, code }),
+    });
+    if (!resp.ok) {
+      console.warn('[cloud] wx-login 失败', resp.status);
+      return '';
+    }
+    const data = await resp.json();
+    if (data.openid) {
+      currentOpenid = data.openid;
+      console.log('[cloud] 已获取 openid');
+      return currentOpenid;
+    }
+    console.warn('[cloud] wx-login 未返回 openid', data);
+    return '';
+  } catch (e) {
+    console.warn('[cloud] wx.login 异常', e);
+    return '';
   }
 }
 
@@ -53,76 +102,82 @@ export interface CloudUserData {
 
 /**
  * 拉取当前用户的云端数据。
- * 依赖数据库"仅创建者可读写"权限：每个 openid 只能查到自己创建的记录。
+ * 依赖 RLS 策略：用户只能查到自己 openid 的记录。
  * 返回 null 表示云端无数据或云未就绪。
  */
 export async function loadCloudData(): Promise<CloudUserData | null> {
-  if (!cloudReady) return null;
+  if (!supabase || !currentOpenid) return null;
   try {
-    const db = (wx as any).cloud.database();
-    const res = await db.collection(COLLECTION).limit(1).get();
-    if (res.data && res.data.length > 0) {
-      return res.data[0] as CloudUserData;
+    const { data, error } = await supabase
+      .from(COLLECTION)
+      .select('profile,checkins,changelog,onboarded,updatedAt')
+      .eq('openid', currentOpenid)
+      .limit(1);
+    if (error) {
+      console.warn('[cloud] 拉取数据失败', error.message);
+      return null;
+    }
+    if (data && data.length > 0) {
+      return data[0] as CloudUserData;
     }
     return null;
   } catch (e) {
-    console.warn('[cloud] 拉取数据失败', e);
+    console.warn('[cloud] 拉取数据异常', e);
     return null;
   }
 }
 
 /**
  * 保存数据到云端（upsert：有则更新，无则新增）。
- * 内部自动写入 updatedAt 时间戳。
+ * 内部自动写入 updatedAt 时间戳和 openid。
  */
 export async function saveCloudData(data: CloudUserData): Promise<void> {
-  if (!cloudReady) return;
+  if (!supabase || !currentOpenid) return;
   try {
-    const db = (wx as any).cloud.database();
-    const payload = { ...data, updatedAt: Date.now() };
-    const res = await db.collection(COLLECTION).limit(1).get();
-    if (res.data && res.data.length > 0) {
-      await db.collection(COLLECTION).doc(res.data[0]._id).update({ data: payload });
-    } else {
-      await db.collection(COLLECTION).add({ data: payload });
+    const payload = { ...data, openid: currentOpenid, updatedAt: Date.now() };
+    // upsert: 按 openid 冲突时更新
+    // 注：未引入 supabase 生成的 Database 类型，此处用 any 规避表结构推断
+    const { error } = await supabase
+      .from(COLLECTION)
+      .upsert(payload as never, { onConflict: 'openid' });
+    if (error) {
+      console.warn('[cloud] 保存数据失败', error.message);
     }
   } catch (e) {
-    console.warn('[cloud] 保存数据失败', e);
+    console.warn('[cloud] 保存数据异常', e);
   }
 }
 
 /**
- * 获取小程序码图片临时路径（用于分享卡片绘制）。
- * 调用 getMiniCode 云函数生成小程序码并上传云存储，返回 fileID；
- * 再用 wx.cloud.getTempFileURL 换成可绘制的临时路径。
+ * 获取小程序码图片 URL（用于分享卡片绘制）。
+ * 调用 Supabase Edge Function getMiniCode 生成小程序码并上传 Supabase Storage，
+ * 返回可绘制的图片 URL。
  * 失败时返回空字符串，分享卡片会跳过二维码绘制。
- *
- * 常见失败原因：
- * - FUNCTION_NOT_FOUND (-501000)：云函数未部署，需在开发者工具右键
- *   cloudfunctions/getMiniCode → 「上传并部署:云端安装依赖」
  */
 export async function getMiniCodeImage(): Promise<string> {
-  if (!cloudReady) return '';
+  if (!supabase) return '';
   try {
-    const res = await (wx as any).cloud.callFunction({
-      name: 'getMiniCode',
-      data: { scene: 'share' },
+    const url = __SUPABASE_URL__;
+    const resp = await fetch(`${url}/functions/v1/getMiniCode`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${__SUPABASE_ANON_KEY__}`,
+      },
+      body: JSON.stringify({ scene: 'share' }),
     });
-    const fileID = res?.result?.fileID;
-    if (!fileID) {
-      console.warn('[cloud] 小程序码生成失败', res?.result);
+    if (!resp.ok) {
+      console.warn('[cloud] getMiniCode 失败', resp.status);
       return '';
     }
-    const urlRes = await (wx as any).cloud.getTempFileURL({ fileList: [fileID] });
-    const url = urlRes?.fileList?.[0]?.tempFileURL;
-    return url || '';
-  } catch (e: any) {
-    const errMsg = String(e?.errMsg || e?.message || e);
-    if (errMsg.includes('FUNCTION_NOT_FOUND') || errMsg.includes('-501000')) {
-      console.error('[cloud] 云函数 getMiniCode 未部署!请在微信开发者工具右键 cloudfunctions/getMiniCode → 上传并部署:云端安装依赖');
-    } else {
-      console.warn('[cloud] 获取小程序码失败', e);
+    const data = await resp.json();
+    if (data.url) {
+      return data.url as string;
     }
+    console.warn('[cloud] getMiniCode 未返回 url', data);
+    return '';
+  } catch (e) {
+    console.warn('[cloud] 获取小程序码异常', e);
     return '';
   }
 }
