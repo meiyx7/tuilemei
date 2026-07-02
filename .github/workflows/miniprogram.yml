@@ -1,9 +1,9 @@
 name: 小程序构建与上传
 
-# 触发：推送到 miniprogram 分支、打 tag（v*）、手动
+# 触发：推送到 feat/supabase 分支、打 tag（v*）、手动
 on:
   push:
-    branches: [miniprogram]
+    branches: [feat/supabase]
     tags: ["v*"]
   workflow_dispatch:
 
