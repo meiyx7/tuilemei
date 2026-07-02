@@ -27,6 +27,19 @@ export function isCloudReady(): boolean {
 }
 
 /**
+ * 当前后端名称，用于界面展示（用户可直观确认走的是哪套后端）。
+ * - Supabase：URL/key 已配置且已初始化
+ * - 本地存储：未配置或初始化失败
+ */
+export function getBackendLabel(): string {
+  if (supabase) {
+    if (currentOpenid) return 'Supabase';
+    return 'Supabase (登录中)';
+  }
+  return '本地存储';
+}
+
+/**
  * 初始化 Supabase 客户端。在 app.ts useLaunch 中调用一次。
  * URL/key 来自构建期常量 __SUPABASE_URL__ / __SUPABASE_ANON_KEY__（config/index.ts 注入）。
  */

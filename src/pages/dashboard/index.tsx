@@ -10,6 +10,7 @@ import {
   todayYm,
 } from '@/lib/pension';
 import { APP_VERSION, BUILD_TIME, formatBeijingTime } from '@/lib/updater';
+import { getBackendLabel } from '@/lib/cloud';
 import CountdownHero from '@/components/CountdownHero';
 import ProfileModal from '@/components/ProfileModal';
 import OnboardingModal from '@/components/OnboardingModal';
@@ -20,6 +21,8 @@ import './index.scss';
 export default function Dashboard() {
   const profile = useStore((s) => s.profile);
   const onboarded = useStore((s) => s.onboarded);
+  // 读取 cloudReady 以触发重渲染：登录完成后 getBackendLabel 能显示正确状态
+  const cloudReady = useStore((s) => s.cloudReady);
   const retirement = calcRetirementAge(profile);
   const pension = calcPension(profile);
 
@@ -94,6 +97,8 @@ export default function Dashboard() {
         <Text className="footer-version">
           v{APP_VERSION}
           {BUILD_TIME ? ` · ${formatBeijingTime(BUILD_TIME)}` : ''}
+          {' · '}
+          {getBackendLabel()}
         </Text>
       </View>
 
